@@ -36,6 +36,16 @@ target_sites = [
     ["종로구청", "https://www.jongno.go.kr/portal/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000271&menuNo=1756&menuId=1756"],
     ["중구청", "https://www.junggu.seoul.kr/content.do"],
     ["중랑구청", "https://www.jungnang.go.kr/portal/bbs/list/B0000117.do?menuNo=200475&viewType="],
+    ["부산광역시", "https://www.pen.go.kr/main/na/ntt/selectNttList.do?mi=30361&bbsId=2342"],
+    ["부산_남구", "https://www.bsnamgu.go.kr/index.namgu?menuCd=DOM_000000105001002000"],
+    ["부산_동래구", "https://www.dongnae.go.kr/index.dongnae?menuCd=DOM_000000103001003000"],
+    ["부산_사상구", "https://www.sasang.go.kr/index.sasang?menuCd=DOM_000000101003001000"],
+    ["대구광역시", "https://www.daegu.go.kr/index.do?menu_id=00940170&menu_link=/front/daeguSidoGosi/daeguSidoGosiList.do"],
+    ["대구_남구", "https://nam.daegu.kr/index.do?menu_id=00000851"],
+    ["대구_동구", "https://www.dong.daegu.kr/portal/saeol/gosi/list.do?mid=0201020000"],
+    ["대구_달서구", "https://www.dalseo.daegu.kr/index.do?menu_id=10000104"],
+    ["대구_중구", "https://www.jung.daegu.kr/new/pages/administration/page.html?mc=0159"],
+    ["울산광역시", "https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan?mId=001004002000000000"],
     ["울산_중구", "https://www.junggu.ulsan.kr/index.ulsan?menuCd=DOM_000000102004001000"],
     ["울산_남구", "https://www.ulsannamgu.go.kr/cop/bbs/selectSaeolGosiList.do"],
     ["울산_동구", "https://www.donggu.ulsan.kr/donggu/contents/contents.do?mId=4040100"],
@@ -53,12 +63,36 @@ target_sites = [
     ["충북_괴산", "https://eminwon.goesan.go.kr/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do"],
     ["충북_음성", "https://www.eumseong.go.kr/www/selectEminwonList.do?pageUnit=10^&ofr_pageSize=10^&key=352^&searchCnd=B_Subject^&searchKrwd=%%EA%%B5%%90%%EC%%84%%AD"],
     ["충북_단양", "https://www.danyang.go.kr/dy21/976"],
-    ["경기_평택", "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosi/list.do?mid=0401020100"],
-    ["경기_양평", "https://www.yp21.go.kr/www/selectBbsNttList.do?key=1119&bbsNo=5&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["경기도", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547#page=1#keyfield=SUBJECTANDREMARK#keyword=%EA%B5%90%EC%84%AD"],
+    ["경기_고양", "https://www.goyang.go.kr/www/link/BD_notice.do?se=01"],
     ["경기_광주", "https://www.gjcity.go.kr/portal/saeol/gosi/list.do?mId=0202010000"],
+    ["경기_구리", "https://www.guri.go.kr/www/selectGosiNttList.do?key=387&searchGosiSe=01%2C04%2C06&searchDeptNm=&searchCnd=ALL&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["경기_남양주", "https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492"],
     ["경기_양주", "https://www.yangju.go.kr/www/selectEminwonList.do?pageUnit=10&key=4075&ofr_pageSize=10&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["경기_양평", "https://www.yp21.go.kr/www/selectBbsNttList.do?key=1119&bbsNo=5&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["경기_평택", "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosi/list.do?mid=0401020100"],
+    ["경기_포천", "https://www.pocheon.go.kr/www/selectEminwonList.do?key=12563&notAncmtSeCode=01&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD&_csrfToken_pcg=9987888e-2dad-438c-8f9d-dc3ad5cfec63"],
+    ["강원특별자치도", "https://state.gwd.go.kr/portal/bulletin/notification?pageIndex=1&recordCountPerPage=15&mode=&firstYN=N&articleSeq=0&searchFromDate=2021-03-09&searchToDate=2026-03-09&searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
+    ["강원_춘천", "https://www.chuncheon.go.kr/cityhall/administrative-info/notice-info/notice-announcement/?pageIndex=1&searchCnd=SJ&searchWrd=%EA%B5%90%EC%84%AD"],
+    ["전북특별자치도", "https://www.jeonbuk.go.kr/board/list.jeonbuk?menuCd=DOM_000000102002005000&boardId=BBS_0000129&listCel=1&categoryCode1=&categoryCode2=&searchType=DATA_TITLE&listRow=10&keyword=%EA%B5%90%EC%84%AD"],
     ["전북_군산", "https://eminwon.gunsan.go.kr/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do"],
+    ["전북_전주", "https://www.jeonju.go.kr/planweb/board/list.9is?boardUid=9be517a7914528ce01930aa3ddc26cf0&contentUid=ff8080818990c349018b041a879f395a&rowCount=10&searchType=dataTitle&keyword=%EA%B5%90%EC%84%AD"],
+    ["경상남도", "https://www.gne.go.kr/user/bbs/BD_selectBbsList.do?csrfToken=84be7b4baea8a5da52e79f1b829dafd59cf7c68c304d971ad1d8676dbbc89021&q_rowPerPage=10&q_currPage=1&q_sortName=&q_sortOrder=&q_bbsSn=1238&q_bbsDocNo=&q_menu=&q_ctgryCd=&q_searchKeyTy=ttl___1002&q_searchVal=%EA%B5%90%EC%84%AD"],
+    ["경남_김해", "https://www.gimhae.go.kr/03360/00023/00029.web?cpage=1&deptCode=&stype=title&sstring=%EA%B5%90%EC%84%AD"],
+    ["경남_의령", "https://www.uiryeong.go.kr/board/list.uiryeong?orderBy=&boardId=BBS_0000070&searchStartDt=&searchEndDt=&startPage=1&menuCd=DOM_000000203003001001&contentsSid=201&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
+    ["경남_창원", "https://www.changwon.go.kr/cwportal/10310/10438/10439.web?cpage=1&pbsDivision=&stype=title&sstring=%EA%B5%90%EC%84%AD&upunit=10"],
+    ["경남_함안", "https://www.haman.go.kr/00960/00962.web?cpage=1&gubun=present&stype=title&sstring=%EA%B5%90%EC%84%AD"],
+    ["경상북도", "https://www.gb.go.kr/Main/page.do?bdName=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&mnu_uid=6789&CSRF_TOKEN=&p1=0&p2=0&dept_name=&dept_code=&BD_CODE=gosi_notice&B_START=2026-01-09&B_END=2026-03-09&key=2&word=%EA%B5%90%EC%84%AD"],
+    ["경북_경산", "https://www.gbgs.go.kr/open_content/ko/page.do"],
+    ["경북_경주", "https://www.gyeongju.go.kr/open_content/ko/page.do"],
+    ["경북_구미", "https://www.gumi.go.kr/portal/saeol/gosi/list.do?seCode=01&mid=0401040000"],
+    ["경북_의성", "https://www.usc.go.kr/ko/page.do?mnu_uid=157&srchColumn=title&srchKwd=%EA%B5%90%EC%84%AD"],
+    ["충청남도", "http://www.cne.go.kr/boardCnts/list.do"],
     ["충남_보령", "https://www.brcn.go.kr/prog/eminwon/kor/BB/sub04_03_01/list.do"],
+    ["충남_예산", "https://www.yesan.go.kr/prog/saeolGosi/GOSI/kor/sub04_03_01/list.do"],
+    ["충남_천안", "https://www.cheonan.go.kr/kor/sub02_02_01.do"],
+    ["충청북도", "https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422&se=&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["충북_청주", "https://www.cheongju.go.kr/www/selectEminwonNoticeList.do?key=281&notAncmtSeCd=&nowDongGn=&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD&x=36&y=8"],
 ]
 def get_recent_dates():
     return [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
@@ -113,6 +147,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
