@@ -36,6 +36,23 @@ target_sites = [
     ["종로구청", "https://www.jongno.go.kr/portal/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000271&menuNo=1756&menuId=1756"],
     ["중구청", "https://www.junggu.seoul.kr/content.do"],
     ["중랑구청", "https://www.jungnang.go.kr/portal/bbs/list/B0000117.do?menuNo=200475&viewType="]
+    ["울산_중구", "https://www.junggu.ulsan.kr/index.ulsan?menuCd=DOM_000000102004001000"],
+    ["울산_남구", "https://www.ulsannamgu.go.kr/cop/bbs/selectSaeolGosiList.do"],
+    ["울산_동구", "https://www.donggu.ulsan.kr/donggu/contents/contents.do?mId=4040100"],
+    ["울산_북구", "https://www.bukgu.ulsan.kr/lay1/S1T86C456/contents.do"],
+    ["울산_울주군", "https://www.ulju.ulsan.kr/ulju/saeol/gosi/list.do?mId=0403010000"],
+    ["충청북도", "https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422^&se=^&searchCnd=all^&searchKrwd=%%EA%%B5%%90%%EC%%84%%AD"],
+    ["충북_청주", "https://www.cheongju.go.kr/www/selectEminwonNoticeList.do?key=281^&notAncmtSeCd=^&nowDongGn=^&searchCnd=all^&searchKrwd=%%EA%%B5%%90%%EC%%84%%AD^&x=36^&y=0"],
+    ["충북_충주", "https://www.chungju.go.kr/www/selectEminwonList.do?ancmt_sj=%%EA%%B5%%90%%EC%%84%%AD^&key=510"],
+    ["충북_제천", "https://www.jecheon.go.kr/www/selectBbsNttList.do?key=5233^&bbsNo=18^&integrDeptCode=^&searchCtgry=^&searchCnd=SJ^&searchKrwd=%%EA%%B5%%90%%EC%%84%%AD"],
+    ["충북_보은", "https://www.boeun.go.kr/www/selectBbsNttList.do?key=194^&bbsNo=66^&searchCtgry=^&integrDeptCode=^&searchCnd=SJ^&searchKrwd=%%EA%%B5%%90%%EC%%84%%AD"],
+    ["충북_옥천", "https://www.oc.go.kr/www/selectBbsNttList.do?key=236^&bbsNo=40^&searchCtgry=^&integrDeptCode=^&searchCnd=SJ^&searchKrwd=%%EA%%B5%%90%%EC%%84%%AD"],
+    ["충북_영동", "https://www.yd21.go.kr/kr/html/sub02/020103.html?mode=L"],
+    ["충북_증평", "http://www.jp.go.kr/kor/sub03_01_03.do"],
+    ["충북_진천", "https://www.jincheon.go.kr/home/sub.do?menukey=235"],
+    ["충북_괴산", "https://eminwon.goesan.go.kr/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do"],
+    ["충북_음성", "https://www.eumseong.go.kr/www/selectEminwonList.do?pageUnit=10^&ofr_pageSize=10^&key=352^&searchCnd=B_Subject^&searchKrwd=%%EA%%B5%%90%%EC%%84%%AD"],
+    ["충북_단양", "https://www.danyang.go.kr/dy21/976"]
 ]
 def get_recent_dates():
     return [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
@@ -90,3 +107,4 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
