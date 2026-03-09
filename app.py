@@ -45,13 +45,13 @@ target_sites = [
 #직    ["서대문구청", "https://www.sdm.go.kr/news/notice/notice.do?mode=list&srchTitle=%EA%B5%90%EC%84%AD"],
 #완    ["서초구청", "https://www.seocho.go.kr/site/seocho/05/10506020000002015070811.jsp"],
 #완    ["성동구청", "https://www.sd.go.kr/main/selectBbsNttList.do?key=1473&bbsNo=184&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["성북구청", "https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchCnd=all&depNm=&searchCnd2=notAncmtSj&pageUnit=10&bgnde=&endde=&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["송파구청", "https://www.songpa.go.kr/www/selectGosiList.do?key=2776&not_ancmt_se_code=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["양천구청", "https://www.yangcheon.go.kr/site/yangcheon/ex/bbs/List.do?cbIdx=254#"],
+#완    ["성북구청", "https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchCnd=all&depNm=&searchCnd2=notAncmtSj&pageUnit=10&bgnde=&endde=&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["송파구청", "https://www.songpa.go.kr/www/selectGosiList.do?key=2776&not_ancmt_se_code=&searchCnd=SJ&searchKrwd=교섭"],
+#직    ["양천구청", "https://www.yangcheon.go.kr/site/yangcheon/ex/bbs/List.do?cbIdx=254#"],
 #완    ["영등포구청", "https://www.ydp.go.kr/www/selectEminwonList.do?key=2851&menuFlag=01&not_ancmt_se_code=&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
 #완    ["용산구청", "https://www.yongsan.go.kr/portal/bbs/B0000095/list.do?menuNo=200233&optn1=&pageUnit=&sdate=&edate=&deptId=&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD"],
 #완    ["은평구청", "https://www.ep.go.kr/www/selectEminwonList.do?key=754&notAncmtSeCode=01&pageUnit=10&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["종로구청", "https://www.jongno.go.kr/portal/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000271&menuNo=1756&menuId=1756"],
+#직    ["종로구청", "https://www.jongno.go.kr/portal/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000271&menuNo=1756&menuId=1756"],
 #직    ["중구청", "https://www.junggu.seoul.kr/content/boards/62/list?search_column=title&search_keyword=교섭"],
 #완    ["중랑구청", "https://www.jungnang.go.kr/portal/bbs/list/B0000117.do?menuNo=200475&viewType="],
 #    ["부산광역시", "https://www.pen.go.kr/main/na/ntt/selectNttList.do?mi=30361&bbsId=2342"],
@@ -182,6 +182,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
