@@ -52,13 +52,13 @@ target_sites = [
     ["충북_진천", "https://www.jincheon.go.kr/home/sub.do?menukey=235"],
     ["충북_괴산", "https://eminwon.goesan.go.kr/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do"],
     ["충북_음성", "https://www.eumseong.go.kr/www/selectEminwonList.do?pageUnit=10^&ofr_pageSize=10^&key=352^&searchCnd=B_Subject^&searchKrwd=%%EA%%B5%%90%%EC%%84%%AD"],
-    ["충북_단양", "https://www.danyang.go.kr/dy21/976"]
-    ["경기_평택", "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosi/list.do?mid=0401020100"]
-    ["경기_양평", "https://www.yp21.go.kr/www/selectBbsNttList.do?key=1119&bbsNo=5&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"]
-    ["경기_광주", "https://www.gjcity.go.kr/portal/saeol/gosi/list.do?mId=0202010000"]
+    ["충북_단양", "https://www.danyang.go.kr/dy21/976"],
+    ["경기_평택", "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosi/list.do?mid=0401020100"],
+    ["경기_양평", "https://www.yp21.go.kr/www/selectBbsNttList.do?key=1119&bbsNo=5&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["경기_광주", "https://www.gjcity.go.kr/portal/saeol/gosi/list.do?mId=0202010000"],
     ["경기_양주", "https://www.yangju.go.kr/www/selectEminwonList.do?pageUnit=10&key=4075&ofr_pageSize=10&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"]
-    ["전북_군산", "https://eminwon.gunsan.go.kr/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do"]
-    ["충남_보령", "https://www.brcn.go.kr/prog/eminwon/kor/BB/sub04_03_01/list.do"]
+    ["전북_군산", "https://eminwon.gunsan.go.kr/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do"],
+    ["충남_보령", "https://www.brcn.go.kr/prog/eminwon/kor/BB/sub04_03_01/list.do"],
 ]
 def get_recent_dates():
     return [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
@@ -113,6 +113,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
