@@ -100,53 +100,43 @@ def get_recent_dates():
 def check_site_stable(name, url, recent_dates):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Cache-Control": "no-cache",
-        "Pragma": "no-cache"
     }
     try:
-        # 보건복지부 같은 곳을 위해 타임아웃을 늘리고 다시 시도 로직 포함
-        response = requests.get(url, headers=headers, timeout=25, verify=False)
+        response = requests.get(url, headers=headers, timeout=20, verify=False)
         response.encoding = 'utf-8'
         content = response.text
 
-        # 1. '결과 없음'을 알리는 키워드 (더 촘촘하게)
+        # [해결책 1] '결과 없음'을 뜻하는 강력한 문구들 추가
+        # 강동구청처럼 낚이는 곳을 위해 "0건" 형식을 더 보강했습니다.
         fail_indicators = [
             '검색된 결과가 없습니다', '등록된 게시물이 없습니다', '데이터가 없습니다',
-            '검색결과가 없습니다', '조회된 내역이 없습니다', '0건', '총 0 건'
+            '검색결과가 없습니다', '조회된 내역이 없습니다', '0건', '총 0건', 
+            '검색결과 <em>0</em>건', '결과 0건'
         ]
         
-        # 2. '교섭' 단어 빈도수 체크 (강북구청 해결용)
-        # 검색 결과가 정말 있다면 리스트 내에 '교섭' 단어가 여러 번 등장해야 함
-        keyword_count = content.count("교섭")
-        
-        # 3. 날짜 체크
-        has_recent_date = any(date in content for date in recent_dates)
-
-        # 결과 판단 로직
         if any(indicator in content for indicator in fail_indicators):
             return [name, url, "⚪ 결과 없음"]
+
+        # [해결책 2] 강북구청 등 검색 미반영 사이트 잡아내기
+        # 검색 결과가 정말 있다면 게시판 테이블 구조(<td> 태그) 안에 '교섭'이 있어야 합니다.
+        # 단순히 메뉴나 푸터에 있는 '교섭'은 무시하도록 '<td>...교섭...</td>' 패턴을 찾습니다.
+        import re
+        # <td> 태그나 <a> 태그 안에 '교섭' 단어가 들어있는지 확인
+        real_data_exists = len(re.findall(r'<(td|a)[^>]*>.*교섭.*</\1>', content)) > 0
         
-        # '교섭' 단어가 최소 3개 이상은 있어야 '검색 결과 리스트'가 뜬 것으로 간주
-        # (검색창에 1개, 메뉴에 1개 정도 있을 수 있으므로)
-        if keyword_count >= 3:
+        has_recent_date = any(date in content for date in recent_dates)
+
+        if real_data_exists:
             if has_recent_date:
                 return [name, url, "🔴 신규 가능성 높음"]
             else:
                 return [name, url, "🟡 기존 공고 존재"]
         else:
-            return [name, url, "⚪ 결과 없음 (검색 실패)"]
-
-    except Exception as e:
-        return [name, url, "⚠️ 확인 불가 (직접 확인)"]
+            # 강북구청처럼 첫 페이지만 뜰 경우, 리스트에 '교섭'이 없으므로 일로 빠집니다.
+            return [name, url, "⚪ 결과 없음 (검색결과 없음)"]
 
     except Exception:
         return [name, url, "⚠️ 확인 불가 (직접 확인)"]
-
-    except Exception as e:
-        # 4번 문제(접속 차단 등) 발생 시 표시
-        return [name, url, f"⚠️ 확인 불가 (직접 확인 요망)"]
-
 # --- 화면 UI ---
 st.warning("시스템 호환성을 위해 브라우저 엔진 없이 '직접 데이터 요청' 방식으로 작동합니다.")
 
@@ -177,6 +167,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
