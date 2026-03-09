@@ -3,10 +3,11 @@ import pandas as pd
 import requests
 from datetime import datetime, timedelta
 import time
+import re
 
 # 페이지 설정
 st.set_page_config(page_title="교섭공고 알리미", page_icon="🔍")
-st.title("🏛️ 전국 지자체 교섭요구공고 확인 (돌봄사업장 지역)")
+st.title("🏛️ 전국 지자체 교섭요구공고 확인   (돌봄사업장 지역)")
 
 # 자치구 리스트 (기존 리스트 그대로 사용)
 target_sites = [
@@ -167,6 +168,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
