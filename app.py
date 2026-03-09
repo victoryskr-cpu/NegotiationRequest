@@ -64,25 +64,21 @@ target_sites = [
  #   ["대구_동구", "https://www.dong.daegu.kr/portal/saeol/gosi/list.do?mid=0201020000"],
  #   ["대구_달서구", "https://www.dalseo.daegu.kr/index.do?menu_id=10000104"],
  #   ["대구_중구", "https://www.jung.daegu.kr/new/pages/administration/page.html?mc=0159"],
-    ["충청북도", "https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422&se=&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["충북_청주", "https://www.cheongju.go.kr/www/selectEminwonNoticeList.do?key=281&notAncmtSeCd=&nowDongGn=&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD&x=40&y=10"],
-    ["충북_충주", "https://www.chungju.go.kr/www/selectEminwonList.do?list_gubun=&searchKrwd=&ancmt_cn=&methodnm=&countYn=&searchCnd=all&wkly_event_mgt_no=&wkly_se_code=&pageUnit=10&ancmt_se_code=01%2C02%2C04%2C05&jndinm=&ofr_pageSize=10&title=&initValue=&homepage_pbs_yn=&subCheck=&context=&cha_dep_code_nm=&method=&countYnAC=&key=510&event_sj=&ancmt_sj=%EA%B5%90%EC%84%AD"],
-    ["충북_제천", "https://www.jecheon.go.kr/www/selectBbsNttList.do?key=5233&bbsNo=18&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["충북_보은", "https://www.boeun.go.kr/www/selectBbsNttList.do?key=194&bbsNo=66&searchCtgry=&integrDeptCode=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["충북_옥천", "https://www.oc.go.kr/www/selectBbsNttList.do?key=236&bbsNo=40&searchCtgry=&integrDeptCode=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["충북_진천", "https://www.jincheon.go.kr/home/sub.do?menukey=235"],
-    ["충북_괴산", "https://www.goesan.go.kr/www/contents.do?key=1439"],
-    ["충북_음성", "https://www.eumseong.go.kr/www/selectEminwonList.do?pageUnit=10&ofr_pageSize=10&key=352&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["충북_단양", "https://www.danyang.go.kr/dy21/976"],
-#    ["경기도", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547#page=1#keyfield=SUBJECTANDREMARK#keyword=%EA%B5%90%EC%84%AD"],
-#    ["경기_고양", "https://www.goyang.go.kr/www/link/BD_notice.do?se=01"],
-#    ["경기_광주", "https://www.gjcity.go.kr/portal/saeol/gosi/list.do?mId=0202010000"],
-#    ["경기_구리", "https://www.guri.go.kr/www/selectGosiNttList.do?key=387&searchGosiSe=01%2C04%2C06&searchDeptNm=&searchCnd=ALL&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["경기_남양주", "https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492"],
-#    ["경기_양주", "https://www.yangju.go.kr/www/selectEminwonList.do?pageUnit=10&key=4075&ofr_pageSize=10&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["경기_양평", "https://www.yp21.go.kr/www/selectBbsNttList.do?key=1119&bbsNo=5&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["경기_평택", "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosi/list.do?mid=0401020100"],
-#    ["경기_포천", "https://www.pocheon.go.kr/www/selectEminwonList.do?key=12563&notAncmtSeCode=01&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD&_csrfToken_pcg=9987888e-2dad-438c-8f9d-dc3ad5cfec63"],
+#    ["충북_제천", "https://www.jecheon.go.kr/www/selectBbsNttList.do?key=5233&bbsNo=18&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+#    ["충북_보은", "https://www.boeun.go.kr/www/selectBbsNttList.do?key=194&bbsNo=66&searchCtgry=&integrDeptCode=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+#    ["충북_옥천", "https://www.oc.go.kr/www/selectBbsNttList.do?key=236&bbsNo=40&searchCtgry=&integrDeptCode=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+#    ["충북_진천", "https://www.jincheon.go.kr/home/sub.do?menukey=235"],
+#    ["충북_괴산", "https://www.goesan.go.kr/www/contents.do?key=1439"],
+#    ["충북_음성", "https://www.eumseong.go.kr/www/selectEminwonList.do?pageUnit=10&ofr_pageSize=10&key=352&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["경기도", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547#page=1#keyfield=SUBJECTANDREMARK#keyword=%EA%B5%90%EC%84%AD"],
+    ["경기_고양", "https://www.goyang.go.kr/www/link/BD_notice.do?se=01"],
+    ["경기_광주", "https://www.gjcity.go.kr/portal/saeol/gosi/list.do?mId=0202010000"],
+    ["경기_구리", "https://www.guri.go.kr/www/selectGosiNttList.do?key=387&searchGosiSe=01%2C04%2C06&searchDeptNm=&searchCnd=ALL&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["경기_남양주", "https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492"],
+    ["경기_양주", "https://www.yangju.go.kr/www/selectEminwonList.do?pageUnit=10&key=4075&ofr_pageSize=10&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["경기_양평", "https://www.yp21.go.kr/www/selectBbsNttList.do?key=1119&bbsNo=5&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["경기_평택", "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosi/list.do?mid=0401020100"],
+    ["경기_포천", "https://www.pocheon.go.kr/www/selectEminwonList.do?key=12563&notAncmtSeCode=01&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD&_csrfToken_pcg=9987888e-2dad-438c-8f9d-dc3ad5cfec63"],
 #    ["강원특별자치도", "https://state.gwd.go.kr/portal/bulletin/notification?pageIndex=1&recordCountPerPage=15&mode=&firstYN=N&articleSeq=0&searchFromDate=2021-03-09&searchToDate=2026-03-09&searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
 #    ["강원_춘천", "https://www.chuncheon.go.kr/cityhall/administrative-info/notice-info/notice-announcement/?pageIndex=1&searchCnd=SJ&searchWrd=%EA%B5%90%EC%84%AD"],
 #    ["전북특별자치도", "https://www.jeonbuk.go.kr/board/list.jeonbuk?menuCd=DOM_000000102002005000&boardId=BBS_0000129&listCel=1&categoryCode1=&categoryCode2=&searchType=DATA_TITLE&listRow=10&keyword=%EA%B5%90%EC%84%AD"],
@@ -127,7 +123,10 @@ manual_sites = [
     ["울산_중구", "https://www.junggu.ulsan.kr/index.ulsan?menuCd=DOM_000000102004001000"],
     ["충북_영동", "https://www.yd21.go.kr/kr/html/sub02/020103.html?mode=L"],
     ["충북_증평", "http://www.jp.go.kr/kor/sub03_01_03.do"],
-
+    ["충청북도", "https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422&se=&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["충북_청주", "https://www.cheongju.go.kr/www/selectEminwonNoticeList.do?key=281&notAncmtSeCd=&nowDongGn=&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD&x=40&y=10"],
+    ["충북_충주", "https://www.chungju.go.kr/www/selectEminwonList.do?list_gubun=&searchKrwd=&ancmt_cn=&methodnm=&countYn=&searchCnd=all&wkly_event_mgt_no=&wkly_se_code=&pageUnit=10&ancmt_se_code=01%2C02%2C04%2C05&jndinm=&ofr_pageSize=10&title=&initValue=&homepage_pbs_yn=&subCheck=&context=&cha_dep_code_nm=&method=&countYnAC=&key=510&event_sj=&ancmt_sj=%EA%B5%90%EC%84%AD"],
+    ["충북_단양", "https://www.danyang.go.kr/dy21/976"],
 
 ]
 
@@ -203,6 +202,7 @@ if st.button("🚀 공고 확인 시작"):
     # CSV 다운로드 (자동 결과 기준)
     csv = df.to_csv(index=False).encode('utf-8-sig')
     st.download_button("📥 자동 확인 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
