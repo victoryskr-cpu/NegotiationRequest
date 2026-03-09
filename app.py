@@ -11,11 +11,11 @@ st.title("🏛️ 전국 지자체 교섭요구공고 확인   (돌봄사업장 
 
 # 자치구 리스트 (기존 리스트 그대로 사용)
 target_sites = [
-    ["보건복지부", "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003&act=list&s_keyword=%EA%B5%90%EC%84%AD"],
+    ["보건복지부", "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003"],
 #완    ["서울특별시", "https://www.seoul.go.kr/news/news_notice.do?bbsNo=277&srchText=교섭"],
 #완    ["강남구청", "https://www.gangnam.go.kr/notice/list.do?mid=ID05_040201&keyfield=BNI_MAIN_TITLE&keyword=교섭"],
     ["강동구청", "https://www.gangdong.go.kr/web/newportal/notice/01?sv=교섭"],
-    ["강북구청", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&searchCnd=0&searchWrd=%EA%B5%90%EC%84%AD"],
+    ["강북구청", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082"],
 #    ["강서구청", "https://www.gangseo.seoul.kr/gs040301?srchKey=sj&srchText=교섭"],
 #    ["관악구청", "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/List.do?typeCode=1&searchCondition=TITLE&searchKeyword=교섭"], # 주소 수정
 #    ["구로구청", "https://www.guro.go.kr/www/selectBbsNttList.do?key=1791&bbsNo=663&searchCnd=SJ&searchKrwd=교섭"],
@@ -99,51 +99,48 @@ def get_recent_dates():
     return [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
 
 def check_site_stable(name, url, recent_dates):
-    # 브라우저처럼 보이기 위한 정교한 헤더 세팅
+    # 실제 브라우저와 똑같은 헤더 설정 (복지부 차단 방지)
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
         "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
         "Connection": "keep-alive",
     }
     
-    # 세션을 사용하여 접속 안정성 확보 (복지부 차단 방지용)
     session = requests.Session()
     
     try:
-        # 1. 특정 지자체(강북, 강동 등)를 위한 POST 데이터 설정
-        # 검색 버튼을 누르는 효과를 줍니다.
-        payload = None
-        if any(target in name for target in ["강북구청", "강동구청", "보건복지부"]):
+        # 1. 기관별 맞춤형 접근 (강북구청/보건복지부 특화)
+        if "강북구청" in name:
+            # 강북구청은 POST 데이터 형식이 매우 중요합니다.
             payload = {
+                "searchCnd": "0",  # 제목 검색
                 "searchWrd": "교섭",
-                "searchCnd": "0",
-                "s_keyword": "교섭", # 복지부용
-                "sv": "교섭"        # 강동구용
+                "menuNo": "200082" # 메뉴 번호 고정
             }
-
-        # 2. 요청 보내기 (POST 혹은 GET)
-        if payload:
             response = session.post(url, headers=headers, data=payload, timeout=25, verify=False)
+        elif "보건복지부" in name:
+            # 복지부는 먼저 메인 페이지에 접속해 쿠키를 구운 뒤 검색 페이지로 가야 합니다.
+            session.get("https://www.mohw.go.kr", headers=headers, timeout=15, verify=False)
+            # 검색어가 포함된 직접적인 리스트 요청
+            search_url = "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003&act=list&s_keyword=교섭&keyField=title"
+            response = session.get(search_url, headers=headers, timeout=25, verify=False)
         else:
-            response = session.get(url, headers=headers, timeout=25, verify=False)
-            
+            # 일반 지자체
+            response = session.get(url, headers=headers, timeout=20, verify=False)
+
         response.encoding = 'utf-8'
         content = response.text
 
-        # 3. '결과 없음' 판단 로직 (강동구 확인불가 해결용)
-        # 결과가 없는데 '확인불가'로 빠지지 않도록 텍스트 검사를 먼저 수행합니다.
-        fail_indicators = [
-            '검색된 결과가 없습니다', '등록된 게시물이 없습니다', '데이터가 없습니다',
-            '조회된 내역이 없습니다', '0건', '총 0건', '결과가 없습니다'
-        ]
-        
+        # 2. 결과 없음 문구 체크
+        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '0건', '총 0건']
         if any(indicator in content for indicator in fail_indicators):
             return [name, url, "⚪ 결과 없음"]
 
-        # 4. 실제 유효 데이터 확인 (정규표현식)
+        # 3. 데이터 영역 내 키워드 확인 (정밀 검색)
         import re
-        # 게시판 리스트의 제목 영역(<a> 태그 등)에 '교섭'이 있는지 정밀 검사
+        # 게시판 제목을 감싸는 <a> 태그나 <td> 태그 위주로 확인
         real_data = re.findall(r'<(td|a|span)[^>]*>.*교섭.*</\1>', content)
         has_recent_date = any(date in content for date in recent_dates)
 
@@ -152,12 +149,12 @@ def check_site_stable(name, url, recent_dates):
                 return [name, url, "🔴 신규 가능성 높음"]
             return [name, url, "🟡 기존 공고 존재"]
         
-        # 문구도 없고 데이터도 없다면 '결과 없음'으로 간주하여 '확인불가'를 방지
+        # 검색 결과가 하나도 걸리지 않으면 결과 없음 처리
         return [name, url, "⚪ 결과 없음"]
 
-    except Exception:
-        # 접속 자체가 완전히 거부된 경우에만 출력
-        return [name, url, "⚠️ 접속 지연 (직접 확인 요망)"]
+    except Exception as e:
+        # 에러 메시지 출력 (테스트용)
+        return [name, url, f"⚠️ 접속지연 (직접 확인 요망)"]
 
 # --- 화면 UI ---
 st.warning("시스템 호환성을 위해 브라우저 엔진 없이 '직접 데이터 요청' 방식으로 작동합니다.")
@@ -189,6 +186,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
