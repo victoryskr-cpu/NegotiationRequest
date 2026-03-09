@@ -10,32 +10,32 @@ st.title("🏛️ 전국 지자체 교섭요구공고 (안정 모드)")
 
 # 자치구 리스트 (기존 리스트 그대로 사용)
 target_sites = [
-    ["서울특별시", "https://www.seoul.go.kr/news/news_notice.do?searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["강남구청", "https://www.gangnam.go.kr/office/gwanbo/bbs/getBbsList.do?searchCondition=0&searchKeyword=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["강동구청", "https://www.gangdong.go.kr/web/portal/ko/bbs/list.do?bbsId=B0001&searchSj=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["강북구청", "https://www.gangbuk.go.kr/www/boardList.do?boardId=B0006&searchCondition=nttSj&searchKeyword=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["강서구청", "https://www.gangseo.seoul.kr/gs040101?curPage=1&searchType=title&searchText=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["관악구청", "https://www.gwanak.go.kr/servlets/rnl/gwanak/board/action/BoardAction?p_menu_cd=000140&p_board_id=1&search_key=title&search_val=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["광진구청", "https://www.gwangjin.go.kr/portal/bbs/B0000001/list.do?searchCnd=0&searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["구로구청", "https://www.guro.go.kr/www/selectBbsNttList.do?bbsNo=640&searchCnd=all&searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["금천구청", "https://www.geumcheon.go.kr/portal/selectBbsNttList.do?bbsNo=147&searchCnd=all&searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["노원구청", "https://www.nowon.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1001&q_searchKey=1001&q_searchVal=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["도봉구청", "https://www.dobong.go.kr/bbs.asp?code=10004131&search_key=title&search_val=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["동대문구청", "https://www.ddm.go.kr/www/selectBbsNttList.do?bbsNo=38&searchCnd=all&searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["동작구청", "https://www.dongjak.go.kr/portal/bbs/B0000022/list.do?searchCnd=0&searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["마포구청", "https://www.mapo.go.kr/site/main/board/notice/list?baCat=TITLE&baText=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["서대문구청", "https://www.sdm.go.kr/news/notice/notice.do?searchCondition=1&searchKeyword=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["서초구청", "https://www.seocho.go.kr/html/notice/notice.jsp?search_field=title&search_word=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["성동구청", "https://www.sd.go.kr/main/selectBbsNttList.do?bbsNo=183&searchCnd=all&searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
+    ["서울특별시", "https://www.seoul.go.kr/news/news_notice.do?bbsNo=277&cntPerPage=10&curPage=1&srchText=%EA%B5%90%EC%84%AD"],
+    ["강남구청", "https://www.gangnam.go.kr/notice/list.do?mid=ID05_040201&pgno=1&lists=10&gubunfield=&deptField=BNI_DEP_CODE&deptId=&keyfield=BNI_MAIN_TITLE&keyword=%EA%B5%90%EC%84%AD"],
+    ["강동구청", "https://www.gangdong.go.kr/web/newportal/notice/01?pageSize=10&sc=&sv=%EA%B5%90%EC%84%AD"],
+    ["강북구청", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&bbsId=&cl1Cd=&optn5=&pageIndex=1&searchCnd2=&searchCnd=&searchWrd=%EA%B5%90%EC%84%AD"],
+    ["강서구청", "https://www.gangseo.seoul.kr/gs040301?srchPage=10&srchKey=sj&srchText=%EA%B5%90%EC%84%AD"],
+    ["관악구청", "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/List.do?typeCode=1"],
+    ["광진구청", "https://www.gwangjin.go.kr/portal/bbs/B0000378/list.do?pageIndex=1&menuNo=200192&noticeType=&searchCnd=&searchWrd=%EA%B5%90%EC%84%AD"],
+    ["구로구청", "https://www.guro.go.kr/www/selectBbsNttList.do?key=1791&bbsNo=663&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["금천구청", "https://www.geumcheon.go.kr/portal/tblSeolGosiDetailList.do?key=294&rep=1&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["노원구청", "https://www.nowon.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1003&q_bbscttSn=&q_estnColumn7=&q_estnColumn1=11&q_ntceSiteCode=11&q_clCode=0&q_rowPerPage=10&q_currPage=1&q_sortName=&q_sortOrder=&q_searchKeyTy=sj___1002&q_searchVal=%EA%B5%90%EC%84%AD"],
+    ["도봉구청", "https://www.dobong.go.kr/WDB_DEV/gosigong_go/default.asp?sDEP_CODE=&strSearchType=1&strSearchKeyword=%EA%B5%90%EC%84%AD"],
+    ["동대문구청", "https://www.ddm.go.kr/www/selectEminwonWebList.do?key=3291&searchNotAncmtSeCode=01%2C02%2C04%2C05%2C06%2C07&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["동작구청", "https://www.dongjak.go.kr/portal/bbs/B0001297/list.do?menuNo=201317"],
+    ["마포구청", "https://www.mapo.go.kr/site/main/nPortal/list?_sToken=1773057057300733_7fdc068a0a2e1c29d54c5dbbc2854934995e9895f3a41063e2d6ed98396173d3&sc=&sv=%EA%B5%90%EC%84%AD&pageSize=10"],
+    ["서대문구청", "https://www.sdm.go.kr/news/notice/notice.do"],
+    ["서초구청", "https://www.seocho.go.kr/site/seocho/05/10506020000002015070811.jsp"],
+    ["성동구청", "https://www.sd.go.kr/main/selectBbsNttList.do?key=1473&bbsNo=184&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
     ["성북구청", "https://www.sb.go.kr/main/selectBbsNttList.do?bbsNo=3&searchCnd=all&searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["송파구청", "https://www.songpa.go.kr/www/selectBbsNttList.do?bbsNo=78&searchCnd=all&searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
+    ["송파구청", "https://www.songpa.go.kr/www/selectGosiList.do?key=2776&not_ancmt_se_code=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
     ["양천구청", "https://www.yangcheon.go.kr/site/yangcheon/ex/bbs/List.do?cbIdx=262&searchTarget=title&searchKeyword=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["영등포구청", "https://www.ydp.go.kr/www/selectBbsNttList.do?bbsNo=40&searchCnd=all&searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["용산구청", "https://www.yongsan.go.kr/portal/bbs/B0000002/list.do?searchCnd=0&searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["은평구청", "https://www.ep.go.kr/www/selectBbsNttList.do?bbsNo=6&searchCnd=all&searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["종로구청", "https://www.jongno.go.kr/portal/bbs/B0000002/list.do?searchCnd=0&searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["중구청", "https://www.junggu.seoul.kr/board/list.do?boardId=BDS00001&searchCnd=all&searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"],
-    ["중랑구청", "https://www.jungnang.go.kr/portal/bbs/list.do?bbsId=B0000001&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD%EC%9A%94%EA%B5%AC"]
+    ["영등포구청", "https://www.ydp.go.kr/www/selectEminwonList.do?key=2851&menuFlag=01&not_ancmt_se_code=&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["용산구청", "https://www.yongsan.go.kr/portal/bbs/B0000095/list.do?menuNo=200233&optn1=&pageUnit=&sdate=&edate=&deptId=&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD"],
+    ["은평구청", "https://www.ep.go.kr/www/selectEminwonList.do?key=754&notAncmtSeCode=01&pageUnit=10&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["종로구청", "https://www.jongno.go.kr/portal/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000271&menuNo=1756&menuId=1756"],
+    ["중구청", "https://www.junggu.seoul.kr/content.do"],
+    ["중랑구청", "https://www.jungnang.go.kr/portal/bbs/list/B0000117.do?menuNo=200475&viewType="]
 ]
 def get_recent_dates():
     return [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
@@ -88,4 +88,5 @@ if st.button("🚀 공고 확인 시작"):
     st.write(df.to_html(escape=False), unsafe_allow_html=True)
 
     csv = df.to_csv(index=False).encode('utf-8-sig')
+
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
