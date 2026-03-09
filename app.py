@@ -19,7 +19,7 @@ st.markdown("""
     .main-title {
         font-size: 2.2rem;       /* 제목 크기 */
         font-weight: bold;
-        line-height: 1.0;        /* 줄간격 최소화 */
+        line-height: 0.0;        /* 줄간격 최소화 */
         margin-bottom: 0px;      /* 아래 여백 제거 */
         padding-bottom: 3px;
     }
@@ -201,6 +201,7 @@ if st.button("🚀 공고 확인 시작"):
     # CSV 다운로드 (자동 결과 기준)
     csv = df.to_csv(index=False).encode('utf-8-sig')
     st.download_button("📥 자동 확인 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
