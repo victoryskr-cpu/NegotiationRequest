@@ -99,62 +99,64 @@ def get_recent_dates():
     return [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
 
 def check_site_stable(name, url, recent_dates):
-    # 실제 브라우저와 똑같은 헤더 설정 (복지부 차단 방지)
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Encoding": "gzip, deflate, br",
         "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Connection": "keep-alive",
     }
     
     session = requests.Session()
     
     try:
-        # 1. 기관별 맞춤형 접근 (강북구청/보건복지부 특화)
-        if "강북구청" in name:
-            # 강북구청은 POST 데이터 형식이 매우 중요합니다.
-            payload = {
-                "searchCnd": "0",  # 제목 검색
-                "searchWrd": "교섭",
-                "menuNo": "200082" # 메뉴 번호 고정
-            }
-            response = session.post(url, headers=headers, data=payload, timeout=25, verify=False)
+        # 1. 지자체별 특화 요청 (강동/강북 등)
+        if "강동구청" in name:
+            # 강동구는 URL 파라미터를 명시적으로 넣어 다시 시도
+            target_url = "https://www.gangdong.go.kr/web/newportal/notice/01?pageSize=10&sc=B.BBS_TITLE&sv=교섭"
+            response = session.get(target_url, headers=headers, timeout=20, verify=False)
+        elif "강북구청" in name:
+            payload = {"searchCnd": "0", "searchWrd": "교섭", "menuNo": "200082"}
+            response = session.post(url, headers=headers, data=payload, timeout=20, verify=False)
         elif "보건복지부" in name:
-            # 복지부는 먼저 메인 페이지에 접속해 쿠키를 구운 뒤 검색 페이지로 가야 합니다.
-            session.get("https://www.mohw.go.kr", headers=headers, timeout=15, verify=False)
-            # 검색어가 포함된 직접적인 리스트 요청
-            search_url = "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003&act=list&s_keyword=교섭&keyField=title"
+            # 복지부는 차단 가능성이 높아 headers를 한 번 더 비틉니다.
+            headers["Referer"] = "https://www.mohw.go.kr/"
+            search_url = "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003&act=list&s_keyword=교섭"
             response = session.get(search_url, headers=headers, timeout=25, verify=False)
         else:
-            # 일반 지자체
             response = session.get(url, headers=headers, timeout=20, verify=False)
 
         response.encoding = 'utf-8'
         content = response.text
 
-        # 2. 결과 없음 문구 체크
-        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '0건', '총 0건']
+        # 2. 결과 없음 원천 차단 (텍스트 검사)
+        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건']
         if any(indicator in content for indicator in fail_indicators):
             return [name, url, "⚪ 결과 없음"]
 
-        # 3. 데이터 영역 내 키워드 확인 (정밀 검색)
+        # 3. [핵심] '강동구청' 낚시 방지 로직
+        # 게시판의 리스트가 출력되는 'tbody' 구역 내부만 검사합니다.
         import re
-        # 게시판 제목을 감싸는 <a> 태그나 <td> 태그 위주로 확인
-        real_data = re.findall(r'<(td|a|span)[^>]*>.*교섭.*</\1>', content)
-        has_recent_date = any(date in content for date in recent_dates)
+        if "강동구청" in name:
+            # 강동구청 HTML 구조상 목록은 <tbody> 안에 있습니다.
+            body_match = re.search(r'<tbody>(.*?)</tbody>', content, re.DOTALL)
+            if body_match:
+                table_content = body_match.group(1)
+                if "교섭" in table_content:
+                    has_date = any(date in table_content for date in recent_dates)
+                    return [name, url, "🔴 신규 가능성 높음" if has_date else "🟡 기존 공고 존재"]
+            return [name, url, "⚪ 결과 없음"]
 
-        if real_data:
-            if has_recent_date:
-                return [name, url, "🔴 신규 가능성 높음"]
-            return [name, url, "🟡 기존 공고 존재"]
+        # 4. 공통 정밀 검사
+        # '교섭'이라는 단어가 링크(<a>) 태그 안에 있는 경우만 진짜 게시물로 인정
+        real_posts = re.findall(r'<a[^>]*>[^<]*교섭[^<]*</a>', content)
         
-        # 검색 결과가 하나도 걸리지 않으면 결과 없음 처리
+        if real_posts:
+            has_recent_date = any(date in content for date in recent_dates)
+            return [name, url, "🔴 신규 가능성 높음" if has_recent_date else "🟡 기존 공고 존재"]
+        
         return [name, url, "⚪ 결과 없음"]
 
-    except Exception as e:
-        # 에러 메시지 출력 (테스트용)
-        return [name, url, f"⚠️ 접속지연 (직접 확인 요망)"]
+    except Exception:
+        return [name, url, "⚠️ 접속지연 (직접 확인 요망)"]
 
 # --- 화면 UI ---
 st.warning("시스템 호환성을 위해 브라우저 엔진 없이 '직접 데이터 요청' 방식으로 작동합니다.")
@@ -186,6 +188,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
