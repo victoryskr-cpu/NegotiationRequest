@@ -97,7 +97,7 @@ target_sites = [
 def get_recent_dates():
     return [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
 
-def def check_site_stable(name, url, recent_dates):
+def check_site_stable(name, url, recent_dates):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -177,6 +177,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
