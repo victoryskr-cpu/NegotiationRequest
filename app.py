@@ -12,8 +12,8 @@ st.title("🏛️ 전국 지자체 교섭요구공고 확인   (돌봄사업장 
 # 자치구 리스트 (기존 리스트 그대로 사용)
 target_sites = [
     ["보건복지부", "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003&act=list&s_keyword=%EA%B5%90%EC%84%AD"],
-    ["서울특별시", "https://www.seoul.go.kr/news/news_notice.do?bbsNo=277&srchText=교섭"],
-    ["강남구청", "https://www.gangnam.go.kr/notice/list.do?mid=ID05_040201&keyfield=BNI_MAIN_TITLE&keyword=교섭"],
+#완    ["서울특별시", "https://www.seoul.go.kr/news/news_notice.do?bbsNo=277&srchText=교섭"],
+#완    ["강남구청", "https://www.gangnam.go.kr/notice/list.do?mid=ID05_040201&keyfield=BNI_MAIN_TITLE&keyword=교섭"],
     ["강동구청", "https://www.gangdong.go.kr/web/newportal/notice/01?sv=교섭"],
     ["강북구청", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&searchCnd=0&searchWrd=%EA%B5%90%EC%84%AD"],
 #    ["강서구청", "https://www.gangseo.seoul.kr/gs040301?srchKey=sj&srchText=교섭"],
@@ -101,43 +101,45 @@ def get_recent_dates():
 def check_site_stable(name, url, recent_dates):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Referer": url,
     }
     try:
+        # 1. 기본 접속 시도
         response = requests.get(url, headers=headers, timeout=20, verify=False)
         response.encoding = 'utf-8'
         content = response.text
 
-        # [해결책 1] '결과 없음'을 뜻하는 강력한 문구들 추가
-        # 강동구청처럼 낚이는 곳을 위해 "0건" 형식을 더 보강했습니다.
-        fail_indicators = [
-            '검색된 결과가 없습니다', '등록된 게시물이 없습니다', '데이터가 없습니다',
-            '검색결과가 없습니다', '조회된 내역이 없습니다', '0건', '총 0건', 
-            '검색결과 <em>0</em>건', '결과 0건'
-        ]
-        
-        if any(indicator in content for indicator in fail_indicators):
-            return [name, url, "⚪ 결과 없음"]
+        # 2. 강북구청/보건복지부처럼 POST 방식이 필요한 경우 대응
+        # 만약 첫 페이지 내용만 보이고 검색어가 안 먹힌다면, 강제로 검색 요청을 보냄
+        if name == "강북구청" or name == "보건복지부":
+            # 강북구청 전용 검색 파라미터 데이터
+            post_data = {
+                "searchCnd": "0",
+                "searchWrd": "교섭"
+            }
+            # POST로 재요청
+            response = requests.post(url, headers=headers, data=post_data, timeout=20, verify=False)
+            content = response.text
 
-        # [해결책 2] 강북구청 등 검색 미반영 사이트 잡아내기
-        # 검색 결과가 정말 있다면 게시판 테이블 구조(<td> 태그) 안에 '교섭'이 있어야 합니다.
-        # 단순히 메뉴나 푸터에 있는 '교섭'은 무시하도록 '<td>...교섭...</td>' 패턴을 찾습니다.
-        import re
-        # <td> 태그나 <a> 태그 안에 '교섭' 단어가 들어있는지 확인
-        real_data_exists = len(re.findall(r'<(td|a)[^>]*>.*교섭.*</\1>', content)) > 0
+        # 3. 결과 판단 로직 (더 엄격하게)
+        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '0건', '총 0건']
+        is_empty = any(indicator in content for indicator in fail_indicators)
         
+        # 실제 데이터 영역(테이블 내 <a> 태그 등)에 '교섭'이 있는지 확인
+        import re
+        real_data_exists = len(re.findall(r'<(td|a)[^>]*>.*교섭.*</\1>', content)) > 0
         has_recent_date = any(date in content for date in recent_dates)
 
-        if real_data_exists:
-            if has_recent_date:
-                return [name, url, "🔴 신규 가능성 높음"]
-            else:
-                return [name, url, "🟡 기존 공고 존재"]
-        else:
-            # 강북구청처럼 첫 페이지만 뜰 경우, 리스트에 '교섭'이 없으므로 일로 빠집니다.
-            return [name, url, "⚪ 결과 없음 (검색결과 없음)"]
+        if is_empty or not real_data_exists:
+            return [name, url, "⚪ 결과 없음"]
+        
+        if has_recent_date:
+            return [name, url, "🔴 신규 가능성 높음"]
+        return [name, url, "🟡 기존 공고 존재"]
 
     except Exception:
         return [name, url, "⚠️ 확인 불가 (직접 확인)"]
+
 # --- 화면 UI ---
 st.warning("시스템 호환성을 위해 브라우저 엔진 없이 '직접 데이터 요청' 방식으로 작동합니다.")
 
@@ -168,6 +170,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
