@@ -164,7 +164,7 @@ def check_site_stable(name, url, recent_dates):
         return [name, url, "⚠️ 직접 확인 요망 (접속 지연/에러)"]
 
 # --- 화면 UI ---
-st.warning("시스템 호환성을 위해 브라우저 엔진 없이 '직접 데이터 요청' 방식으로 작동합니다.")
+# st.warning("시스템 호환성을 위해 브라우저 엔진 없이 '직접 데이터 요청' 방식으로 작동합니다.")
 
 if st.button("🚀 공고 확인 시작"):
     recent_dates = get_recent_dates()
@@ -201,6 +201,7 @@ if st.button("🚀 공고 확인 시작"):
     # CSV 다운로드 (자동 결과 기준)
     csv = df.to_csv(index=False).encode('utf-8-sig')
     st.download_button("📥 자동 확인 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
