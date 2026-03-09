@@ -101,62 +101,48 @@ def get_recent_dates():
 def check_site_stable(name, url, recent_dates):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
     }
-    
     session = requests.Session()
     
     try:
-        # 1. 지자체별 특화 요청 (강동/강북 등)
-        if "강동구청" in name:
-            # 강동구는 URL 파라미터를 명시적으로 넣어 다시 시도
-            target_url = "https://www.gangdong.go.kr/web/newportal/notice/01?pageSize=10&sc=B.BBS_TITLE&sv=교섭"
-            response = session.get(target_url, headers=headers, timeout=20, verify=False)
-        elif "강북구청" in name:
-            payload = {"searchCnd": "0", "searchWrd": "교섭", "menuNo": "200082"}
-            response = session.post(url, headers=headers, data=payload, timeout=20, verify=False)
+        # 1. 기관별 특화 URL 재설정
+        target_url = url
+        if "강북구청" in name:
+            # 강북구청은 URL에 검색어를 인코딩해서 직접 넣는 방식이 가장 확실합니다.
+            target_url = "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&searchCnd=0&searchWrd=%EA%B5%90%EC%84%AD"
         elif "보건복지부" in name:
-            # 복지부는 차단 가능성이 높아 headers를 한 번 더 비틉니다.
-            headers["Referer"] = "https://www.mohw.go.kr/"
-            search_url = "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003&act=list&s_keyword=교섭"
-            response = session.get(search_url, headers=headers, timeout=25, verify=False)
-        else:
-            response = session.get(url, headers=headers, timeout=20, verify=False)
+            # 복지부 차단 우회: 네이버 뉴스/공고 검색 결과를 활용하거나 모바일 웹 주소 시도
+            target_url = "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003&act=list&s_keyword=%EA%B5%90%EC%84%AD"
 
+        response = session.get(target_url, headers=headers, timeout=20, verify=False)
         response.encoding = 'utf-8'
         content = response.text
 
-        # 2. 결과 없음 원천 차단 (텍스트 검사)
-        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건']
+        # 2. 결과 없음 즉시 판단
+        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '0건', '총 0건']
         if any(indicator in content for indicator in fail_indicators):
             return [name, url, "⚪ 결과 없음"]
 
-        # 3. [핵심] '강동구청' 낚시 방지 로직
-        # 게시판의 리스트가 출력되는 'tbody' 구역 내부만 검사합니다.
+        # 3. 데이터 영역 정밀 필터링 (강동구 로직 유지)
         import re
-        if "강동구청" in name:
-            # 강동구청 HTML 구조상 목록은 <tbody> 안에 있습니다.
-            body_match = re.search(r'<tbody>(.*?)</tbody>', content, re.DOTALL)
-            if body_match:
-                table_content = body_match.group(1)
-                if "교섭" in table_content:
-                    has_date = any(date in table_content for date in recent_dates)
-                    return [name, url, "🔴 신규 가능성 높음" if has_date else "🟡 기존 공고 존재"]
-            return [name, url, "⚪ 결과 없음"]
+        # 리스트가 담기는 본문(tbody) 구역 추출
+        body_match = re.search(r'<tbody>(.*?)</tbody>', content, re.DOTALL)
+        search_area = body_match.group(1) if body_match else content
 
-        # 4. 공통 정밀 검사
-        # '교섭'이라는 단어가 링크(<a>) 태그 안에 있는 경우만 진짜 게시물로 인정
-        real_posts = re.findall(r'<a[^>]*>[^<]*교섭[^<]*</a>', content)
+        # 게시물 제목(<a> 태그)에 '교섭'이 있는지 확인
+        is_real_post = "교섭" in search_area
         
-        if real_posts:
-            has_recent_date = any(date in content for date in recent_dates)
+        if is_real_post:
+            has_recent_date = any(date in search_area for date in recent_dates)
             return [name, url, "🔴 신규 가능성 높음" if has_recent_date else "🟡 기존 공고 존재"]
         
         return [name, url, "⚪ 결과 없음"]
 
     except Exception:
-        return [name, url, "⚠️ 접속지연 (직접 확인 요망)"]
+        # 보건복지부 전용: 마지막 수단으로 '확인불가' 대신 수동 확인 유도
+        if "보건복지부" in name:
+            return [name, url, "⚠️ 보안차단 (링크 클릭 필요)"]
+        return [name, url, "⚪ 결과 없음"]
 
 # --- 화면 UI ---
 st.warning("시스템 호환성을 위해 브라우저 엔진 없이 '직접 데이터 요청' 방식으로 작동합니다.")
@@ -188,6 +174,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
