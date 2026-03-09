@@ -21,7 +21,7 @@ st.markdown("""
     }
     </style>
     
-    <h1 class="main-title">🏛️ 전국 지자체 교섭요구공고 확인</h1>
+    <h1 class="main-title">지자체 교섭요구공고 확인</h1>
     <h3 class="sub-title">(돌봄사업장 지역)</h3>
     <br>
 """, unsafe_allow_html=True)
@@ -182,6 +182,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
