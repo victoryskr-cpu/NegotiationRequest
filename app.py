@@ -16,7 +16,7 @@ target_sites = [
     ["강동구청", "https://www.gangdong.go.kr/web/newportal/notice/01?pageSize=10&sc=&sv=%EA%B5%90%EC%84%AD"],
     ["강북구청", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&bbsId=&cl1Cd=&optn5=&pageIndex=1&searchCnd2=&searchCnd=&searchWrd=%EA%B5%90%EC%84%AD"],
     ["강서구청", "https://www.gangseo.seoul.kr/gs040301?srchPage=10&srchKey=sj&srchText=%EA%B5%90%EC%84%AD"],
-    ["관악구청", "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/List.do?typeCode=1"],
+    ["관악구청", "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/List.do?typeCode=1&searchCondition=TITLE&searchKeyword=교섭"],
     ["광진구청", "https://www.gwangjin.go.kr/portal/bbs/B0000378/list.do?pageIndex=1&menuNo=200192&noticeType=&searchCnd=&searchWrd=%EA%B5%90%EC%84%AD"],
     ["구로구청", "https://www.guro.go.kr/www/selectBbsNttList.do?key=1791&bbsNo=663&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
     ["금천구청", "https://www.geumcheon.go.kr/portal/tblSeolGosiDetailList.do?key=294&rep=1&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD"],
@@ -172,6 +172,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
