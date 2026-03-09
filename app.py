@@ -15,7 +15,7 @@ st.markdown("""
         padding-bottom: 0px;
     }
     .sub-title {
-        margin-top: -10px;     /* 부제를 위로 끌어올림 (숫자가 클수록 더 가까워짐) */
+        margin-top: -13px;     /* 부제를 위로 끌어올림 (숫자가 클수록 더 가까워짐) */
         color: #555;           /* 부제 색상을 약간 흐리게 (선택 사항) */
         font-weight: normal;
     }
@@ -182,6 +182,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
