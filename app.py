@@ -100,22 +100,46 @@ def get_recent_dates():
 
 def check_site_stable(name, url, recent_dates):
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7"
     }
     try:
-        # 브라우저를 띄우지 않고 소스코드만 직접 요청
-        response = requests.get(url, headers=headers, timeout=15, verify=False)
+        # verify=False는 유지하되, 한글 깨짐 방지를 위해 인코딩 설정 추가
+        response = requests.get(url, headers=headers, timeout=20, verify=False)
+        response.encoding = response.apparent_encoding # 실제 페이지 인코딩에 맞춤
         content = response.text
+
+        # 1. 결과 없음 판단 키워드 (3번 문제 해결용)
+        # 지자체마다 '0건' 표시 방식이 다르므로 더 세분화했습니다.
+        no_result_keywords = [
+            "검색된 결과가 없습니다", "데이터가 없습니다", "등록된 게시물이 없습니다", 
+            "0건", "검색결과 0", "결과가 존재하지 않습니다", "조회된 내용이 없습니다"
+        ]
         
-        no_result = any(txt in content for txt in ["검색된 결과가 없습니다", "0건", "데이터가 없습니다"])
-        has_keyword = "교섭" in content and not no_result
-        has_date = any(date in content for date in recent_dates)
-        
-        if has_keyword and has_date: status = "🔴 신규 가능성 높음"
-        elif has_keyword: status = "🟡 '교섭' 공고 존재"
-        else: status = "⚪ 결과 없음"
+        # '교섭'이라는 단어가 본문(게시판 테이블)이 아닌 
+        # 상단 메뉴나 하단 안내문에만 있는 경우를 거르기 위해 is_empty를 먼저 체크합니다.
+        is_empty = any(txt in content for txt in no_result_keywords)
+
+        # 2. 상태 결정 로직
+        if is_empty:
+            status = "⚪ 결과 없음"
+        else:
+            # 결과가 있을 때만 '교섭' 단어와 '최근 날짜'가 있는지 확인
+            has_keyword = "교섭" in content
+            has_date = any(date in content for date in recent_dates)
+
+            if has_keyword and has_date:
+                status = "🔴 신규 공고 가능성 (날짜 일치)"
+            elif has_keyword:
+                status = "🟡 기존 공고 존재"
+            else:
+                status = "⚪ 결과 없음"
+
         return [name, url, status]
+
     except Exception as e:
+        # 4번 문제(접속 차단 등) 발생 시 표시
         return [name, url, f"⚠️ 확인 불가 (직접 확인 요망)"]
 
 # --- 화면 UI ---
@@ -148,6 +172,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
