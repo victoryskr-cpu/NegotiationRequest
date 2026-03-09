@@ -71,7 +71,7 @@ def check_site_stable(name, url, recent_dates):
         has_date = any(date in content for date in recent_dates)
         
         if has_keyword and has_date: status = "🔴 신규 가능성 높음"
-        elif has_keyword: status = "🟡 예전 공고 존재"
+        elif has_keyword: status = "🟡 '교섭' 공고 존재"
         else: status = "⚪ 결과 없음"
         return [name, url, status]
     except Exception as e:
@@ -107,5 +107,6 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
