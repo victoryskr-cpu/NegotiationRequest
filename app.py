@@ -99,46 +99,65 @@ def get_recent_dates():
     return [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
 
 def check_site_stable(name, url, recent_dates):
+    # 브라우저처럼 보이기 위한 정교한 헤더 세팅
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Referer": url,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Connection": "keep-alive",
     }
+    
+    # 세션을 사용하여 접속 안정성 확보 (복지부 차단 방지용)
+    session = requests.Session()
+    
     try:
-        # 1. 기본 접속 시도
-        response = requests.get(url, headers=headers, timeout=20, verify=False)
+        # 1. 특정 지자체(강북, 강동 등)를 위한 POST 데이터 설정
+        # 검색 버튼을 누르는 효과를 줍니다.
+        payload = None
+        if any(target in name for target in ["강북구청", "강동구청", "보건복지부"]):
+            payload = {
+                "searchWrd": "교섭",
+                "searchCnd": "0",
+                "s_keyword": "교섭", # 복지부용
+                "sv": "교섭"        # 강동구용
+            }
+
+        # 2. 요청 보내기 (POST 혹은 GET)
+        if payload:
+            response = session.post(url, headers=headers, data=payload, timeout=25, verify=False)
+        else:
+            response = session.get(url, headers=headers, timeout=25, verify=False)
+            
         response.encoding = 'utf-8'
         content = response.text
 
-        # 2. 강북구청/보건복지부처럼 POST 방식이 필요한 경우 대응
-        # 만약 첫 페이지 내용만 보이고 검색어가 안 먹힌다면, 강제로 검색 요청을 보냄
-        if name == "강북구청" or name == "보건복지부":
-            # 강북구청 전용 검색 파라미터 데이터
-            post_data = {
-                "searchCnd": "0",
-                "searchWrd": "교섭"
-            }
-            # POST로 재요청
-            response = requests.post(url, headers=headers, data=post_data, timeout=20, verify=False)
-            content = response.text
-
-        # 3. 결과 판단 로직 (더 엄격하게)
-        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '0건', '총 0건']
-        is_empty = any(indicator in content for indicator in fail_indicators)
+        # 3. '결과 없음' 판단 로직 (강동구 확인불가 해결용)
+        # 결과가 없는데 '확인불가'로 빠지지 않도록 텍스트 검사를 먼저 수행합니다.
+        fail_indicators = [
+            '검색된 결과가 없습니다', '등록된 게시물이 없습니다', '데이터가 없습니다',
+            '조회된 내역이 없습니다', '0건', '총 0건', '결과가 없습니다'
+        ]
         
-        # 실제 데이터 영역(테이블 내 <a> 태그 등)에 '교섭'이 있는지 확인
+        if any(indicator in content for indicator in fail_indicators):
+            return [name, url, "⚪ 결과 없음"]
+
+        # 4. 실제 유효 데이터 확인 (정규표현식)
         import re
-        real_data_exists = len(re.findall(r'<(td|a)[^>]*>.*교섭.*</\1>', content)) > 0
+        # 게시판 리스트의 제목 영역(<a> 태그 등)에 '교섭'이 있는지 정밀 검사
+        real_data = re.findall(r'<(td|a|span)[^>]*>.*교섭.*</\1>', content)
         has_recent_date = any(date in content for date in recent_dates)
 
-        if is_empty or not real_data_exists:
-            return [name, url, "⚪ 결과 없음"]
+        if real_data:
+            if has_recent_date:
+                return [name, url, "🔴 신규 가능성 높음"]
+            return [name, url, "🟡 기존 공고 존재"]
         
-        if has_recent_date:
-            return [name, url, "🔴 신규 가능성 높음"]
-        return [name, url, "🟡 기존 공고 존재"]
+        # 문구도 없고 데이터도 없다면 '결과 없음'으로 간주하여 '확인불가'를 방지
+        return [name, url, "⚪ 결과 없음"]
 
     except Exception:
-        return [name, url, "⚠️ 확인 불가 (직접 확인)"]
+        # 접속 자체가 완전히 거부된 경우에만 출력
+        return [name, url, "⚠️ 접속 지연 (직적 확인 요망)"]
 
 # --- 화면 UI ---
 st.warning("시스템 호환성을 위해 브라우저 엔진 없이 '직접 데이터 요청' 방식으로 작동합니다.")
@@ -170,6 +189,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
