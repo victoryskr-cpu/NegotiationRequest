@@ -192,7 +192,7 @@ if st.button("🚀 공고 확인 시작"):
     # --- 직접 확인 리스트 섹션 ---
     st.markdown("---")
     st.subheader("📢 게시판으로 이동해서 직접 검색하세요")
-    st.info("아래 사이트들은 구조적 특성상 자동 확인이 어려우므로 링크를 클릭해 직접 검색어(교섭)를 입력해 주세요.")
+    st.info("아래 지자체들은 구조적 특성상 자동 확인이 어려우므로 링크를 클릭해 직접 '교섭' 입력하여 검색해주세요.")
     
     m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
     m_df['링크'] = m_df['링크'].apply(make_link)
@@ -201,6 +201,7 @@ if st.button("🚀 공고 확인 시작"):
     # CSV 다운로드 (자동 결과 기준)
     csv = df.to_csv(index=False).encode('utf-8-sig')
     st.download_button("📥 자동 확인 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
