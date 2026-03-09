@@ -54,14 +54,14 @@ target_sites = [
 #직    ["종로구청", "https://www.jongno.go.kr/portal/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000271&menuNo=1756&menuId=1756"],
 #직    ["중구청", "https://www.junggu.seoul.kr/content/boards/62/list?search_column=title&search_keyword=교섭"],
 #완    ["중랑구청", "https://www.jungnang.go.kr/portal/bbs/list/B0000117.do?menuNo=200475&viewType="],
-    ["부산광역시", "https://www.busan.go.kr/nbgosi/list?conIfmStdt=2025-09-10&conIfmEnddt=2026-03-10&conGosiGbn=&schKeyType=A&srchText=%EA%B5%90%EC%84%AD"],
-    ["부산_남구", "https://www.bsnamgu.go.kr/index.namgu?menuCd=DOM_000000105001002000"],
-    ["부산_동래구", "https://www.dongnae.go.kr/index.dongnae?menuCd=DOM_000000103001003000"],
+#완    ["부산광역시", "https://www.busan.go.kr/nbgosi/list?conIfmStdt=2025-09-10&conIfmEnddt=2026-03-10&conGosiGbn=&schKeyType=A&srchText=%EA%B5%90%EC%84%AD"],
+#완    ["부산_남구", "https://www.bsnamgu.go.kr/index.namgu?menuCd=DOM_000000105001002000"],
+#완    ["부산_동래구", "https://www.dongnae.go.kr/index.dongnae?menuCd=DOM_000000103001003000"],
     ["부산_사상구", "https://www.sasang.go.kr/index.sasang?menuCd=DOM_000000101003001000"],
-    ["대구광역시", "https://www.daegu.go.kr/index.do?menu_id=00940170&menu_link=/front/daeguSidoGosi/daeguSidoGosiList.do"],
-    ["대구_남구", "https://nam.daegu.kr/index.do?menu_id=00000851"],
-    ["대구_동구", "https://www.dong.daegu.kr/portal/saeol/gosi/list.do?mid=0201020000"],
-    ["대구_달서구", "https://www.dalseo.daegu.kr/index.do?menu_id=10000104"],
+#직    ["대구광역시", "https://www.daegu.go.kr/index.do?menu_id=00940170&menu_link=/front/daeguSidoGosi/daeguSidoGosiList.do"],
+#직    ["대구_남구", "https://nam.daegu.kr/index.do?menu_id=00000851"],
+#완    ["대구_동구", "https://www.dong.daegu.kr/portal/saeol/gosi/list.do?mid=0201020000"],
+#완    ["대구_달서구", "https://www.dalseo.daegu.kr/index.do?menu_id=10000104"],
     ["대구_중구", "https://www.jung.daegu.kr/new/pages/administration/page.html?mc=0159"],
 #    ["울산광역시", "https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan?mId=001004002000000000"],
 #    ["울산_중구", "https://www.junggu.ulsan.kr/index.ulsan?menuCd=DOM_000000102004001000"],
@@ -182,6 +182,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
