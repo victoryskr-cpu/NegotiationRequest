@@ -10,6 +10,7 @@ st.title("🏛️ 전국 지자체 교섭요구공고 (안정 모드)")
 
 # 자치구 리스트 (기존 리스트 그대로 사용)
 target_sites = [
+    ["보건복지부", "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003"],
     ["서울특별시", "https://www.seoul.go.kr/news/news_notice.do?bbsNo=277&cntPerPage=10&curPage=1&srchText=%EA%B5%90%EC%84%AD"],
     ["강남구청", "https://www.gangnam.go.kr/notice/list.do?mid=ID05_040201&pgno=1&lists=10&gubunfield=&deptField=BNI_DEP_CODE&deptId=&keyfield=BNI_MAIN_TITLE&keyword=%EA%B5%90%EC%84%AD"],
     ["강동구청", "https://www.gangdong.go.kr/web/newportal/notice/01?pageSize=10&sc=&sv=%EA%B5%90%EC%84%AD"],
@@ -147,6 +148,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
