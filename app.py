@@ -8,13 +8,23 @@ import re
 # 페이지 설정
 st.set_page_config(page_title="교섭공고 알리미", page_icon="🔍")
 st.markdown("""
-    <div style="text-align: left;">
-        <h1 style="margin-bottom: 0px; padding-bottom: 0px;">🏛️ 전국 지자체 교섭요구공고 확인</h1>
-        <h3 style="margin-top: -10px; color: #555;">(돌봄사업장 지역)</h3>
-    </div>
+    <style>
+    .main-title {
+        line-height: 1.2;      /* 줄간격 설정 */
+        margin-bottom: 0px;    /* 제목 아래쪽 여백 제거 */
+        padding-bottom: 0px;
+    }
+    .sub-title {
+        margin-top: -10px;     /* 부제를 위로 끌어올림 (숫자가 클수록 더 가까워짐) */
+        color: #555;           /* 부제 색상을 약간 흐리게 (선택 사항) */
+        font-weight: normal;
+    }
+    </style>
+    
+    <h1 class="main-title">🏛️ 전국 지자체 교섭요구공고 확인</h1>
+    <h3 class="sub-title">(돌봄사업장 지역)</h3>
     <br>
 """, unsafe_allow_html=True)
-
 
 # 자치구 리스트 (기존 리스트 그대로 사용)
 target_sites = [
@@ -24,7 +34,7 @@ target_sites = [
 #완-확인    ["강동구청", "https://www.gangdong.go.kr/web/newportal/notice/01?sv=교섭"],
 #직    ["강북구청", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082"],
 #완    ["강서구청", "https://www.gangseo.seoul.kr/gs040301?srchKey=sj&srchText=교섭"],
-    ["관악구청", "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/List.do?typeCode=1&searchCondition=TITLE&searchKeyword=교섭"], # 주소 수정
+    ["관악구청", "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/List.do?typeCode=1&searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"], # 주소 수정
     ["구로구청", "https://www.guro.go.kr/www/selectBbsNttList.do?key=1791&bbsNo=663&searchCnd=SJ&searchKrwd=교섭"],
 #완    ["금천구청", "https://www.geumcheon.go.kr/portal/tblSeolGosiDetailList.do?key=294&rep=1&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD"],
 #완    ["노원구청", "https://www.nowon.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1003&q_bbscttSn=&q_estnColumn7=&q_estnColumn1=11&q_ntceSiteCode=11&q_clCode=0&q_rowPerPage=10&q_currPage=1&q_sortName=&q_sortOrder=&q_searchKeyTy=sj___1002&q_searchVal=%EA%B5%90%EC%84%AD"],
@@ -32,7 +42,7 @@ target_sites = [
 #완    ["동대문구청", "https://www.ddm.go.kr/www/selectEminwonWebList.do?key=3291&searchNotAncmtSeCode=01%2C02%2C04%2C05%2C06%2C07&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
     ["동작구청", "https://www.dongjak.go.kr/portal/bbs/B0001297/list.do?menuNo=201317"],
 #완    ["마포구청", "https://www.mapo.go.kr/site/main/nPortal/list?_sToken=1773057057300733_7fdc068a0a2e1c29d54c5dbbc2854934995e9895f3a41063e2d6ed98396173d3&sc=&sv=%EA%B5%90%EC%84%AD&pageSize=10"],
-    ["서대문구청", "https://www.sdm.go.kr/news/notice/notice.do?mode=list&srchTitle=교섭"],
+    ["서대문구청", "https://www.sdm.go.kr/news/notice/notice.do?mode=list&srchTitle=%EA%B5%90%EC%84%AD"],
     ["서초구청", "https://www.seocho.go.kr/site/seocho/05/10506020000002015070811.jsp"],
 #완    ["성동구청", "https://www.sd.go.kr/main/selectBbsNttList.do?key=1473&bbsNo=184&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
     ["성북구청", "https://www.sb.go.kr/main/mainPage.do?menuNo=01000000&searchWrd=교섭"],
@@ -172,6 +182,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
