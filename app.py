@@ -157,7 +157,7 @@ def check_site_stable(name, url, recent_dates):
 
     except Exception:
         # 접속 자체가 완전히 거부된 경우에만 출력
-        return [name, url, "⚠️ 접속 지연 (직적 확인 요망)"]
+        return [name, url, "⚠️ 접속 지연 (직접 확인 요망)"]
 
 # --- 화면 UI ---
 st.warning("시스템 호환성을 위해 브라우저 엔진 없이 '직접 데이터 요청' 방식으로 작동합니다.")
@@ -189,6 +189,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
