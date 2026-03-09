@@ -10,15 +10,14 @@ st.title("🏛️ 전국 지자체 교섭요구공고 (안정 모드)")
 
 # 자치구 리스트 (기존 리스트 그대로 사용)
 target_sites = [
-    ["보건복지부", "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003"],
-    ["서울특별시", "https://www.seoul.go.kr/news/news_notice.do?bbsNo=277&cntPerPage=10&curPage=1&srchText=%EA%B5%90%EC%84%AD"],
-    ["강남구청", "https://www.gangnam.go.kr/notice/list.do?mid=ID05_040201&pgno=1&lists=10&gubunfield=&deptField=BNI_DEP_CODE&deptId=&keyfield=BNI_MAIN_TITLE&keyword=%EA%B5%90%EC%84%AD"],
-    ["강동구청", "https://www.gangdong.go.kr/web/newportal/notice/01?pageSize=10&sc=&sv=%EA%B5%90%EC%84%AD"],
-    ["강북구청", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&bbsId=&cl1Cd=&optn5=&pageIndex=1&searchCnd2=&searchCnd=&searchWrd=%EA%B5%90%EC%84%AD"],
-    ["강서구청", "https://www.gangseo.seoul.kr/gs040301?srchPage=10&srchKey=sj&srchText=%EA%B5%90%EC%84%AD"],
-    ["관악구청", "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/List.do?typeCode=1&searchCondition=TITLE&searchKeyword=교섭"],
-    ["광진구청", "https://www.gwangjin.go.kr/portal/bbs/B0000378/list.do?pageIndex=1&menuNo=200192&noticeType=&searchCnd=&searchWrd=%EA%B5%90%EC%84%AD"],
-    ["구로구청", "https://www.guro.go.kr/www/selectBbsNttList.do?key=1791&bbsNo=663&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["보건복지부", "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003&act=list&s_keyword=교섭"],
+    ["서울특별시", "https://www.seoul.go.kr/news/news_notice.do?bbsNo=277&srchText=교섭"],
+    ["강남구청", "https://www.gangnam.go.kr/notice/list.do?mid=ID05_040201&keyfield=BNI_MAIN_TITLE&keyword=교섭"],
+    ["강동구청", "https://www.gangdong.go.kr/web/newportal/notice/01?sv=교섭"],
+    ["강북구청", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&searchCnd=0&searchWrd=교섭"],
+    ["강서구청", "https://www.gangseo.seoul.kr/gs040301?srchKey=sj&srchText=교섭"],
+    ["관악구청", "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/List.do?typeCode=1&searchCondition=TITLE&searchKeyword=교섭"], # 주소 수정
+    ["구로구청", "https://www.guro.go.kr/www/selectBbsNttList.do?key=1791&bbsNo=663&searchCnd=SJ&searchKrwd=교섭"],
     ["금천구청", "https://www.geumcheon.go.kr/portal/tblSeolGosiDetailList.do?key=294&rep=1&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD"],
     ["노원구청", "https://www.nowon.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1003&q_bbscttSn=&q_estnColumn7=&q_estnColumn1=11&q_ntceSiteCode=11&q_clCode=0&q_rowPerPage=10&q_currPage=1&q_sortName=&q_sortOrder=&q_searchKeyTy=sj___1002&q_searchVal=%EA%B5%90%EC%84%AD"],
     ["도봉구청", "https://www.dobong.go.kr/WDB_DEV/gosigong_go/default.asp?sDEP_CODE=&strSearchType=1&strSearchKeyword=%EA%B5%90%EC%84%AD"],
@@ -172,6 +171,7 @@ if st.button("🚀 공고 확인 시작"):
     csv = df.to_csv(index=False).encode('utf-8-sig')
 
     st.download_button("📥 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
