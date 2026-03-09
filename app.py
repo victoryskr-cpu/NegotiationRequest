@@ -7,23 +7,35 @@ import re
 
 # 페이지 설정
 st.set_page_config(page_title="교섭공고 알리미", page_icon="🔍")
+
+# CSS 및 HTML 수정: 가운데 정렬 및 줄간격 최적화
 st.markdown("""
     <style>
+    .header-container {
+        text-align: center;      /* 전체 가운데 정렬 */
+        margin-top: -20px;       /* 상단 여백 조절 */
+        margin-bottom: 20px;
+    }
     .main-title {
-        line-height: 1.2;
-        margin-bottom: 0px;
-        padding-bottom: 0px;
+        font-size: 2.2rem;       /* 제목 크기 */
+        font-weight: bold;
+        line-height: 1.0;        /* 줄간격 최소화 */
+        margin-bottom: 0px;      /* 아래 여백 제거 */
+        padding-bottom: 5px;
     }
     .sub-title {
-        margin-top: -13px;
-        color: #555;
+        font-size: 1.2rem;       /* 부제 크기 */
+        color: #666;             /* 부제 색상 */
+        margin-top: 0px;         /* 위쪽 여백 제거 */
         font-weight: normal;
+        line-height: 1.0;
     }
     </style>
     
-    <h1 class="main-title">지자체 교섭요구공고 확인</h1>
-    <h3 class="sub-title">(돌봄사업장 지역)</h3>
-    <br>
+    <div class="header-container">
+        <h1 class="main-title">지자체 교섭요구공고 확인</h1>
+        <h3 class="sub-title">(돌봄사업장 지역)</h3>
+    </div>
 """, unsafe_allow_html=True)
 
 # 1. 자동 확인 가능 리스트 (#완 항목 활성화)
@@ -189,6 +201,7 @@ if st.button("🚀 공고 확인 시작"):
     # CSV 다운로드 (자동 결과 기준)
     csv = df.to_csv(index=False).encode('utf-8-sig')
     st.download_button("📥 자동 확인 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
