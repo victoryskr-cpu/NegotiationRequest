@@ -138,75 +138,51 @@ manual_data = [
 target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
 manual_sites = sorted(manual_data, key=lambda x: x[0])
 
-# 사이드바 설정 (요청 순서대로 노출)
+# 사이드바 설정 (첫 화면 모두 해제 상태)
 st.sidebar.header("📍 검색 지역 설정")
 select_all = st.sidebar.checkbox("전체 지역 선택", value=False)
-
 selected_regions = []
 for region in sort_order:
-    if region in target_data:
-        count = len(target_data[region])
-        label = f"{region} ({count})"
-        is_checked = st.sidebar.checkbox(label, value=select_all)
-        if is_checked and count > 0:
-            selected_regions.append(region)
+    count = len(target_data[region])
+    is_checked = st.sidebar.checkbox(f"{region} ({count})", value=select_all)
+    if is_checked and count > 0: selected_regions.append(region)
 
-# 실행용 타겟 리스트 구성
 target_sites = []
-for reg in selected_regions:
-    target_sites.extend(target_data[reg])
+for reg in selected_regions: target_sites.extend(target_data[reg])
 
-# [기존 check_site_stable 함수 로직]
+# 자동 확인 함수
 def check_site_stable(name, url, recent_dates):
     headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
     try:
-        session = requests.Session()
-        response = session.get(url, headers=headers, timeout=15, verify=False, allow_redirects=True)
+        response = requests.get(url, headers=headers, timeout=15, verify=False)
         response.encoding = response.apparent_encoding 
-        content = response.text
-        main_content = re.sub(r'<script.*?</script>|<style.*?</style>|<header.*?</header>|<footer.*?</footer>|<nav.*?</nav>', '', content, flags=re.DOTALL)
-        
-        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건</span>', '0건</td>', '>0건<', '검색결과가 없습니다', '검색결과 0건']
-        if any(indicator in main_content for indicator in fail_indicators):
-            return [name, url, "⚪ 결과 없음"]
-
+        main_content = re.sub(r'<script.*?</script>|<style.*?</style>', '', response.text, flags=re.DOTALL)
+        if any(ind in main_content for ind in ['검색된 결과가 없습니다', '0건</span>', '검색결과 0건']): return [name, url, "⚪ 결과 없음"]
         for date in recent_dates:
-            dot_date = date.replace('-', '.')
-            short_dot_date = dot_date[2:]
-            patterns = [f"교섭.{{0,200}}({date}|{dot_date}|{short_dot_date})", f"({date}|{dot_date}|{short_dot_date}).{{0,200}}교섭"]
-            if any(re.search(p, main_content, re.DOTALL) for p in patterns):
-                return [name, url, "🔴 신규 가능성 높음"]
+            if re.search(f"교섭.*{date}", main_content): return [name, url, "🔴 신규 가능성 높음"]
+        return [name, url, "🟡 기존 공고 존재"] if "교섭" in main_content else [name, url, "⚪ 결과 없음"]
+    except: return [name, url, "⚠️ 확인 요망"]
 
-        if "교섭" in main_content:
-            return [name, url, "🟡 기존 공고 존재"]
-        return [name, url, "⚪ 결과 없음"]
-    except:
-        return [name, url, "⚠️ 확인 요망 (접속 지연)"]
-
-# 메인 UI
+# 메인 UI 레이아웃
 col1, col2, col3 = st.columns([1,2,1])
 with col2:
-    if st.button("🚀 선택 지역 공고 확인 시작"):
-        if not target_sites:
-            st.warning("선택된 지역이 없습니다. 사이드바에서 지역을 선택해주세요.")
+    if st.button("🚀 선택 지역 자동 확인 시작"):
+        if not target_sites: st.warning("지역을 선택해주세요.")
         else:
             recent_dates = [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
             results = []
-            progress_text = st.empty()
             bar = st.progress(0)
-            
             for i, (name, url) in enumerate(target_sites):
-                progress_text.text(f"확인 중: {name} ({i+1}/{len(target_sites)})")
                 results.append(check_site_stable(name, url, recent_dates))
                 bar.progress((i + 1) / len(target_sites))
-                time.sleep(0.05)
-
             df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
             df['링크'] = df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
-            st.success(f"총 {len(target_sites)}개 사이트 검사 완료!")
             st.write(df.to_html(escape=False), unsafe_allow_html=True)
 
+# 📢 직접 확인 리스트 (버튼 누르기 전에도 항상 표시)
 st.markdown("---")
-# 복구된 직접 확인 리스트 표시
 st.subheader(f"📢 직접 확인 리스트 ({len(manual_sites)}개 지역)")
+st.info("아래 리스트는 자동 검색이 지원되지 않는 지역입니다. 링크를 클릭해 직접 '교섭' 키워드로 확인하세요.")
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
+m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동 후 \'교섭\' 검색</a>')
+st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
