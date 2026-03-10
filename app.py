@@ -472,29 +472,97 @@ def check_gyeongnam(name: str, url: str):
 def check_gyeonggi(name: str, url: str):
     """
     경기도 고시공고 전용 검색
-    실제 확인한 파라미터 기반
+    GET/POST 둘 다 시도하고, 결과 페이지에서 제목을 직접 보강
     """
     session = create_session()
 
+    payload = {
+        "bsIdx": "469",
+        "bcIdx": "0",
+        "menuId": "1547",
+        "isManager": "false",
+        "isCharge": "false",
+        "keyfield": "SUBJECTANDREMARK",
+        "keyword": "교섭",
+        "offset": "0",
+        "limit": "10"
+    }
+
+    candidate_requests = [
+        ("GET", "https://www.gg.go.kr/bbs/board.do", payload),
+        ("POST", "https://www.gg.go.kr/bbs/board.do", payload),
+        ("GET", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547", payload),
+        ("POST", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547", payload),
+    ]
+
     try:
-        search_url = "https://www.gg.go.kr/bbs/board.do"
-        params = {
-            "bsIdx": "469",
-            "bcIdx": "0",
-            "menuId": "1547",
-            "isManager": "false",
-            "isCharge": "false",
-            "keyfield": "SUBJECTANDREMARK",
-            "keyword": "교섭",
-            "offset": "0",
-            "limit": "10"
-        }
+        best_result = None
 
-        response = session.get(search_url, params=params, timeout=15)
-        response.raise_for_status()
-        response.encoding = response.apparent_encoding or response.encoding
+        for method, target_url, data in candidate_requests:
+            try:
+                if method == "GET":
+                    response = session.get(target_url, params=data, timeout=15)
+                else:
+                    response = session.post(target_url, data=data, timeout=15)
 
-        return analyze_response_text(name, url, response.text)
+                response.raise_for_status()
+                response.encoding = response.apparent_encoding or response.encoding
+
+                text = response.text
+                lines = extract_text_lines(text)
+                joined_text = " ".join(lines)
+
+                # 검색 결과 텍스트가 실제로 보이는지 먼저 확인
+                if "교섭" in joined_text:
+                    status, detected_date, detected_title = classify_status_from_lines(lines)
+
+                    # 제목이 약하면 한 번 더 보강
+                    if not detected_title or len(detected_title) < 8:
+                        detected_title = extract_best_title_from_lines(lines, keyword="교섭")
+
+                    # 그래도 제목이 약하지만 교섭은 있는 경우
+                    if not detected_title and "교섭" in joined_text:
+                        detected_title = "교섭 검색 결과 감지"
+
+                    return make_result(
+                        name,
+                        url,
+                        status if status != "⚪ 결과 없음" else "🟡 기존 공고",
+                        detected_date,
+                        detected_title
+                    )
+
+                # keyword는 안 보이지만 결과 페이지일 가능성 대비
+                if best_result is None:
+                    best_result = make_result(name, url, "⚪ 결과 없음")
+
+            except Exception:
+                continue
+
+        # 마지막 fallback: 원래 URL 페이지 자체를 다시 검사
+        fallback_response = session.get(url, timeout=15)
+        fallback_response.raise_for_status()
+        fallback_response.encoding = fallback_response.apparent_encoding or fallback_response.encoding
+
+        fallback_text = fallback_response.text
+        fallback_lines = extract_text_lines(fallback_text)
+        fallback_joined = " ".join(fallback_lines)
+
+        if "교섭" in fallback_joined:
+            status, detected_date, detected_title = classify_status_from_lines(fallback_lines)
+
+            if not detected_title or len(detected_title) < 8:
+                detected_title = extract_best_title_from_lines(fallback_lines, keyword="교섭")
+
+            return make_result(
+                name,
+                url,
+                status if status != "⚪ 결과 없음" else "🟡 기존 공고",
+                detected_date,
+                detected_title
+            )
+
+        return best_result or make_result(name, url, "⚪ 결과 없음")
 
     except requests.exceptions.Timeout:
         return make_result(name, url, "⚠️ 타임아웃")
@@ -787,5 +855,6 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
