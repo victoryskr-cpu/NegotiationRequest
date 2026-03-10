@@ -122,34 +122,30 @@ def check_site_stable(name, url, recent_dates):
         response.encoding = response.apparent_encoding 
         content = response.text
         
-        # 1. 본문 영역 추출 로직 강화 (춘천, 전주, 김해, 창원 대응)
-        # 더 다양한 게시판 구조(list_content, board-list 등)를 포함하도록 정규식 확장
-        main_match = re.search(r'<(?:div|section|tbody|table|ul|dl)[^>]*(?:id|class)=["\'](?:contents|board_list|list|table|container|board-list|list_content|board_type)[^>]*>(.*?)</(?:div|section|tbody|table|ul|dl)>', content, re.DOTALL | re.IGNORECASE)
+        # [수정] 너무 정교하게 자르려다 놓치는 경우를 방지하기 위해 
+        # 노이즈(메뉴, 푸터 등)만 제거하고 본문 전체를 봅니다.
+        main_content = re.sub(r'<script.*?</script>|<style.*?</style>|<header.*?</header>|<footer.*?</footer>|<nav.*?</nav>', '', content, flags=re.DOTALL)
         
-        if main_match:
-            main_content = main_match.group(1)
-        else:
-            # 영역 추출 실패 시 노이즈 제거 후 사용
-            main_content = re.sub(r'<script.*?</script>|<style.*?</style>|<header.*?</header>|<footer.*?</footer>|<nav.*?</nav>', '', content, flags=re.DOTALL)
-        
-        # 2. 결과 없음 지표 체크 (검색 결과가 실제 0건인지 확인)
-        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건</span>', '0건</td>', '>0건<', '검색결과가 없습니다']
+        # 1. '결과 없음' 지표 체크 (이 문구가 있으면 무조건 결과 없음)
+        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건</span>', '0건</td>', '>0건<', '검색결과가 없습니다', '검색결과 0건']
         if any(indicator in main_content for indicator in fail_indicators):
             return [name, url, "⚪ 결과 없음"]
 
-        # 3. 신규 공고 판독 (교섭 단어 근처에 최근 날짜가 있는지)
+        # 2. 신규 공고 판독 (교섭 단어 근처에 최근 날짜가 있는지)
         for date in recent_dates:
-            # 날짜 형식 유연화 (2024-03-21, 24.03.21, 03-21 등)
-            short_date = date[2:] if len(date) > 8 else date
-            pattern = f"교섭.{{0,100}}({date}|{short_date})|({date}|{short_date}).{{0,100}}교섭"
+            # 날짜 형식 유연화 (YYYY-MM-DD, YY.MM.DD 등)
+            short_date = date[2:].replace('-', '.') if len(date) > 8 else date
+            hyphen_date = date
+            
+            # 패턴: 교섭 글자 주변 150자 이내에 오늘/최근 날짜가 보이면 신규
+            pattern = f"교섭.{{0,150}}({hyphen_date}|{short_date})|({hyphen_date}|{short_date}).{{0,150}}교섭"
             if re.search(pattern, main_content, re.DOTALL):
                 return [name, url, "🔴 신규 가능성 높음"]
 
-        # 4. 기존 공고 존재 (키워드 + 날짜 형식 검색)
+        # 3. 기존 공고 판독
+        # '결과 없음' 문구는 없는데 '교섭' 단어가 본문에 들어있다면 존재로 판단
         if "교섭" in main_content:
-            # 날짜 형태가 보이면 기존 공고로 판단
-            if re.search(r'\d{2,4}[-.]\d{2}[-.]\d{2}', main_content):
-                return [name, url, "🟡 기존 공고 존재"]
+            return [name, url, "🟡 기존 공고 존재"]
 
         return [name, url, "⚪ 결과 없음"]
     except:
@@ -179,6 +175,7 @@ if st.button("🚀 공고 확인 시작"):
     m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
     m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
     st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
+
 
 
 
