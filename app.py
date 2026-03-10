@@ -6,7 +6,6 @@ import time
 import re
 from io import BytesIO
 
-# 1. 페이지 설정
 st.set_page_config(
     page_title="교섭공고 알리미", 
     page_icon="🔍", 
@@ -14,7 +13,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. 스타일 설정 (가운데 정렬 및 부제목 크기 조절 포함)
 st.markdown("""
     <style>
     .header-container { text-align: center; margin-top: -20px; margin-bottom: 20px; }
@@ -22,24 +20,12 @@ st.markdown("""
     .sub-title { font-size: 1.2rem; color: #444; font-weight: 500; }
     .status-text { font-weight: bold; color: #ff4b4b; display: block; text-align: center; margin-bottom: 10px; }
     .stButton>button { width: 100%; border-radius: 5px; min-height: 3.5em; font-weight: bold; }
-    
-    /* 직접 확인 리스트 제목 스타일 */
     .manual-title { font-size: 1.3rem; font-weight: bold; margin-bottom: 0px; }
     .manual-subtitle { font-size: 0.9rem; color: #666; display: block; margin-bottom: 10px; }
-    
-    /* 안내 문구 박스 */
     .guide-box { 
-        background-color: #f0f2f6; 
-        padding: 15px; 
-        border-radius: 10px; 
-        text-align: center; 
-        border: 1px dashed #ff4b4b;
-        margin-bottom: 20px;
-        font-weight: bold;
-        color: #ff4b4b;
+        background-color: #f0f2f6; padding: 15px; border-radius: 10px; text-align: center; 
+        border: 1px dashed #ff4b4b; margin-bottom: 20px; font-weight: bold; color: #ff4b4b;
     }
-    
-    /* 표 텍스트 가운데 정렬 설정 */
     table { width: 100%; border-collapse: collapse; }
     th { text-align: center !important; background-color: #f8f9fa; }
     td { text-align: center !important; vertical-align: middle; }
@@ -50,7 +36,6 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# 1. 자동 확인 데이터 (요청하신 순서대로 정렬 키 정의)
 sort_order = ["서울특별시", "부산광역시", "대구광역시", "울산광역시", "강원도", "전라북도", "경상북도", "경상남도", "충청남도", "충청북도"]
 
 raw_target_data = {
@@ -67,11 +52,11 @@ raw_target_data = {
         ["서울_동작", "https://www.dongjak.go.kr/portal/bbs/B0001297/list.do?menuNo=201317&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD"],
         ["서울_마포", "https://www.mapo.go.kr/site/main/nPortal/list?sv=%EA%B5%90%EC%84%AD"],
         ["서울_성동", "https://www.sd.go.kr/main/selectBbsNttList.do?key=1473&bbsNo=184&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-        ["서울_성북", "https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchCnd2=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
-        ["서울_영등포", "https://www.ydp.go.kr/www/selectEminwonList.do?key=2851&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
-        ["서울_용산", "https://www.yongsan.go.kr/portal/bbs/B0000095/list.do?menuNo=200233&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD"],
-        ["서울_은평", "https://www.ep.go.kr/www/selectEminwonList.do?key=754&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
-        ["서울_중랑", "https://www.jungnang.go.kr/portal/bbs/list/B0000117.do?menuNo=200475&searchWrd=%EA%B5%90%EC%84%AD"]
+        ["서울_성북", "https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchCnd2=notAncmtSj&searchKrwd=교섭"],
+        ["서울_영등포", "https://www.ydp.go.kr/www/selectEminwonList.do?key=2851&searchCnd=B_Subject&searchKrwd=교섭"],
+        ["서울_용산", "https://www.yongsan.go.kr/portal/bbs/B0000095/list.do?menuNo=200233&searchCnd=1&searchWrd=교섭"],
+        ["서울_은평", "https://www.ep.go.kr/www/selectEminwonList.do?key=754&searchCnd=notAncmtSj&searchKrwd=교섭"],
+        ["서울_중랑", "https://www.jungnang.go.kr/portal/bbs/list/B0000117.do?menuNo=200475&searchWrd=교섭"]
     ],
     "부산광역시": [
         ["부산광역시", "https://www.busan.go.kr/nbgosi/list?schKeyType=A&srchText=%EA%B5%90%EC%84%AD"],
@@ -119,7 +104,6 @@ raw_target_data = {
     ]
 }
 
-# 2. 직접 확인(수동) 데이터 복구
 manual_data = [
     ["보건복지부", "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003"],
     ["서울_강북구", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082"],
@@ -165,7 +149,6 @@ manual_data = [
 target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
 manual_sites = sorted(manual_data, key=lambda x: x[0])
 
-# 3. 사이드바 설정
 st.sidebar.header("📍 검색 지역 설정")
 select_all = st.sidebar.checkbox("전체 지역 선택", value=False)
 selected_regions = []
@@ -177,7 +160,6 @@ for region in sort_order:
 target_sites = []
 for reg in selected_regions: target_sites.extend(target_data[reg])
 
-# 4. 판별 및 엑셀 기능
 def check_site_stable(name, url):
     headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
     try:
@@ -207,7 +189,6 @@ def to_excel(df):
         df_excel.to_excel(writer, index=False, sheet_name='교섭공고결과')
     return output.getvalue()
 
-# 5. 메인 UI 및 안내 문구
 if not selected_regions:
     st.markdown('<div class="guide-box">왼쪽 상단 [ > ] 화살표 눌러 지역 선택!</div>', unsafe_allow_html=True)
 
@@ -230,9 +211,8 @@ with col2:
             df_display = df.copy()
             df_display['링크'] = df_display['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
             st.download_button(label="📥 결과 엑셀 내려받기", data=to_excel(df), file_name=f"교섭결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx", mime="application/vnd.ms-excel")
-            st.write(df_display.to_html(escape=False), unsafe_allow_html=True)
+            st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
 
-# 6. 직접 확인 리스트
 st.markdown("---")
 st.markdown(f"""
     <div style="text-align: left;">
@@ -243,5 +223,4 @@ st.markdown(f"""
 
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
-st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
-
+st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
