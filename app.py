@@ -109,7 +109,7 @@ manual_sites = [
     ["충북_청주", "https://www.cheongju.go.kr/www/selectEminwonNoticeList.do?key=281&searchKrwd=%EA%B5%90%EC%84%AD"],
     ["충북_충주", "https://www.chungju.go.kr/www/selectEminwonList.do?key=510&ancmt_sj=%EA%B5%90%EC%84%AD"],
     ["충북_단양", "https://www.danyang.go.kr/dy21/976"],
-#    ["경상북도", "https://www.gb.go.kr/Main/page.do?bdName=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&mnu_uid=6789"],
+    ["경상남도", "https://www.gyeongnam.go.kr/index.gyeong?menuCd=DOM_000000135003009001"],
 ]
 
 def get_recent_dates():
@@ -118,32 +118,39 @@ def get_recent_dates():
 def check_site_stable(name, url, recent_dates):
     headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
     try:
-        # 경상남도 등 까다로운 사이트를 위해 세션 유지 및 리다이렉트 허용
         session = requests.Session()
         response = session.get(url, headers=headers, timeout=25, verify=False, allow_redirects=True)
         response.encoding = response.apparent_encoding 
         content = response.text
         
-        # 본문 영역 추출 (id/class가 contents, board_list 등인 곳)
-        main_match = re.search(r'<(?:div|section|tbody|table)[^>]*(?:id|class)=["\'](?:contents|board_list|list|table|container)[^>]*>(.*?)</(?:div|section|tbody|table)>', content, re.DOTALL | re.IGNORECASE)
-        main_content = main_match.group(1) if main_match else re.sub(r'<script.*?</script>|<style.*?</style>|<header.*?</header>|<footer.*?</footer>|<nav.*?</nav>', '', content, flags=re.DOTALL)
+        # 1. 본문 영역 추출 로직 강화 (춘천, 전주, 김해, 창원 대응)
+        # 더 다양한 게시판 구조(list_content, board-list 등)를 포함하도록 정규식 확장
+        main_match = re.search(r'<(?:div|section|tbody|table|ul|dl)[^>]*(?:id|class)=["\'](?:contents|board_list|list|table|container|board-list|list_content|board_type)[^>]*>(.*?)</(?:div|section|tbody|table|ul|dl)>', content, re.DOTALL | re.IGNORECASE)
         
-        # 1. '결과 없음' 지표 체크
-        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건</span>', '0건</td>', '>0건<']
+        if main_match:
+            main_content = main_match.group(1)
+        else:
+            # 영역 추출 실패 시 노이즈 제거 후 사용
+            main_content = re.sub(r'<script.*?</script>|<style.*?</style>|<header.*?</header>|<footer.*?</footer>|<nav.*?</nav>', '', content, flags=re.DOTALL)
+        
+        # 2. 결과 없음 지표 체크 (검색 결과가 실제 0건인지 확인)
+        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건</span>', '0건</td>', '>0건<', '검색결과가 없습니다']
         if any(indicator in main_content for indicator in fail_indicators):
             return [name, url, "⚪ 결과 없음"]
 
-        # 2. [개선] 신규 공고 판독 (근접 매칭)
-        # '교섭' 단어 앞뒤 50자 이내에 오늘/어제 등 최근 날짜가 있는지 확인
+        # 3. 신규 공고 판독 (교섭 단어 근처에 최근 날짜가 있는지)
         for date in recent_dates:
-            # 교섭 단어와 최근 날짜가 본문에서 아주 가까이 붙어있는지 확인
-            pattern = f"교섭.{{0,50}}{date}|{date}.{{0,50}}교섭"
+            # 날짜 형식 유연화 (2024-03-21, 24.03.21, 03-21 등)
+            short_date = date[2:] if len(date) > 8 else date
+            pattern = f"교섭.{{0,100}}({date}|{short_date})|({date}|{short_date}).{{0,100}}교섭"
             if re.search(pattern, main_content, re.DOTALL):
                 return [name, url, "🔴 신규 가능성 높음"]
 
-        # 3. 기존 공고 (날짜 양식 + 교섭 키워드)
-        if "교섭" in main_content and re.search(r'\d{2,4}[-.]\d{2}[-.]\d{2}', main_content):
-            return [name, url, "🟡 기존 공고 존재"]
+        # 4. 기존 공고 존재 (키워드 + 날짜 형식 검색)
+        if "교섭" in main_content:
+            # 날짜 형태가 보이면 기존 공고로 판단
+            if re.search(r'\d{2,4}[-.]\d{2}[-.]\d{2}', main_content):
+                return [name, url, "🟡 기존 공고 존재"]
 
         return [name, url, "⚪ 결과 없음"]
     except:
@@ -173,6 +180,7 @@ if st.button("🚀 공고 확인 시작"):
     m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
     m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
     st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
+
 
 
 
