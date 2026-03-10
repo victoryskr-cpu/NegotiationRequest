@@ -15,6 +15,7 @@ st.markdown("""
     .main-title { font-size: 2.2rem; font-weight: bold; line-height: 1.2; margin-bottom: 5px; }
     .sub-title { font-size: 1.2rem; color: #666; font-weight: normal; line-height: 1.0; }
     .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #f0f2f6; }
+    .status-text { font-weight: bold; color: #ff4b4b; margin-bottom: 10px; display: block; }
     </style>
     <div class="header-container">
         <h1 class="main-title">지자체 교섭요구공고 확인</h1>
@@ -138,7 +139,7 @@ manual_data = [
 target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
 manual_sites = sorted(manual_data, key=lambda x: x[0])
 
-# 사이드바 설정 (첫 화면 모두 해제 상태)
+# 사이드바 설정
 st.sidebar.header("📍 검색 지역 설정")
 select_all = st.sidebar.checkbox("전체 지역 선택", value=False)
 selected_regions = []
@@ -150,39 +151,71 @@ for region in sort_order:
 target_sites = []
 for reg in selected_regions: target_sites.extend(target_data[reg])
 
-# 자동 확인 함수
-def check_site_stable(name, url, recent_dates):
+# 🛠️ 정밀 날짜 판별 함수
+def check_site_stable(name, url):
     headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
     try:
         response = requests.get(url, headers=headers, timeout=15, verify=False)
         response.encoding = response.apparent_encoding 
-        main_content = re.sub(r'<script.*?</script>|<style.*?</style>', '', response.text, flags=re.DOTALL)
-        if any(ind in main_content for ind in ['검색된 결과가 없습니다', '0건</span>', '검색결과 0건']): return [name, url, "⚪ 결과 없음"]
-        for date in recent_dates:
-            if re.search(f"교섭.*{date}", main_content): return [name, url, "🔴 신규 가능성 높음"]
-        return [name, url, "🟡 기존 공고 존재"] if "교섭" in main_content else [name, url, "⚪ 결과 없음"]
+        # 불필요 태그 제거 및 텍스트 정규화
+        clean_text = re.sub(r'<script.*?</script>|<style.*?</style>|<[^>]*>', '', response.text, flags=re.DOTALL)
+        
+        # 1. '교섭' 단어 자체가 없으면 결과 없음
+        if "교섭" not in clean_text:
+            return [name, url, "⚪ 결과 없음"]
+
+        # 2. 최근 7일 날짜 리스트 생성 (2026년 기준 정밀 패턴)
+        today = datetime.now()
+        recent_days = []
+        for i in range(8):
+            dt = today - timedelta(days=i)
+            # 패턴: 2026-03-10, 26-03-10, 2026.03.10, 03.10 등
+            d_str = dt.strftime("%Y-%m-%d")
+            d_dot = dt.strftime("%Y.%m.%d")
+            d_short = dt.strftime("%m.%d")
+            recent_days.extend([d_str, d_dot, d_short, d_str[2:], d_dot[2:]])
+
+        # 3. '교섭' 단어 근처 50자 내에 최근 날짜가 있는지 확인
+        # 텍스트 내의 모든 '교섭' 위치를 찾음
+        for m in re.finditer(r"교섭", clean_text):
+            start = max(0, m.start() - 50)
+            end = min(len(clean_text), m.end() + 50)
+            context = clean_text[start:end].replace(" ", "") # 공백 제거 후 비교
+            
+            if any(day.replace("-",".").replace(".","") in context.replace(".","") for day in recent_days):
+                return [name, url, "🔴 신규 가능성 높음"]
+
+        return [name, url, "🟡 기존 공고 존재"]
     except: return [name, url, "⚠️ 확인 요망"]
 
-# 메인 UI 레이아웃
+# 메인 UI
 col1, col2, col3 = st.columns([1,2,1])
 with col2:
+    status_placeholder = st.empty() # % 표시용 빈 공간
     if st.button("🚀 선택 지역 자동 확인 시작"):
         if not target_sites: st.warning("지역을 선택해주세요.")
         else:
-            recent_dates = [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
             results = []
             bar = st.progress(0)
+            total = len(target_sites)
+            
             for i, (name, url) in enumerate(target_sites):
-                results.append(check_site_stable(name, url, recent_dates))
-                bar.progress((i + 1) / len(target_sites))
+                # 실시간 % 표시 및 현재 작업 지역 표시
+                percent = int(((i + 1) / total) * 100)
+                status_placeholder.markdown(f"<span class='status-text'>⏳ [{percent}%] 확인 중: {name}</span>", unsafe_allow_html=True)
+                
+                results.append(check_site_stable(name, url))
+                bar.progress((i + 1) / total)
+                time.sleep(0.1) # 서버 부하 방지용 짧은 휴식
+
+            status_placeholder.success(f"✅ 검사 완료! (총 {total}개 지역)")
             df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
             df['링크'] = df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
             st.write(df.to_html(escape=False), unsafe_allow_html=True)
 
-# 📢 직접 확인 리스트 (버튼 누르기 전에도 항상 표시)
+# 직접 확인 리스트 상시 노출
 st.markdown("---")
 st.subheader(f"📢 직접 확인 리스트 ({len(manual_sites)}개 지역)")
-st.info("아래 리스트는 자동 검색이 지원되지 않는 지역입니다. 링크를 클릭해 직접 '교섭' 키워드로 확인하세요.")
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동 후 \'교섭\' 검색</a>')
 st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
