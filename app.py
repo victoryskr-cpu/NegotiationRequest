@@ -100,9 +100,9 @@ manual_sites = [
     ["경기_평택", "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosi/list.do?mid=0401020100"],
     ["경북_경주", "https://www.gyeongju.go.kr/open_content/ko/page.do?mnu_uid=423"],
     ["경북_경산", "https://www.gbgs.go.kr/open_content/ko/page.do?mnu_uid=2160&"],    
-    ["경북_김천", "https://www.gc.go.kr/portal/saeol/gosi/list.do?mId=0202010000"],
+    ["경북_김천", "https://www.gc.go.kr/portal/saeol/gosi/list.do?mId=1202180100"],
     ["경북_안동", "https://www.andong.go.kr/portal/saeol/gosi/list.do?mId=0401010000"],
-    ["경북_구미", "https://www.gumi.go.kr/portal/saeol/gosi/list.do?mId=0401010000"],      
+    ["경북_구미", "https://www.gumi.go.kr/portal/saeol/gosi/list.do?seCode=01&mid=0401040000&token=1773109728792"],      
     ["경북_포항", "https://www.pohang.go.kr/portal/saeol/gosi/list.do?mid=0202010000"],    
     ["경상남도", "https://www.gyeongnam.go.kr/index.gyeong?menuCd=DOM_000000135003009001"],
     ["충남_공주", "https://www.gongju.go.kr/prog/saeolGosi/GOSI_01/sub04_03_01/list.do"],
@@ -184,6 +184,7 @@ if st.button("🚀 공고 확인 시작"):
     m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
     m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
     st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
+
 
 
 
