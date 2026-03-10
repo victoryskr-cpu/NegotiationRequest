@@ -24,8 +24,9 @@ st.markdown("""
             font-weight: bold;
             margin-bottom: 0px;
         }
+        /* 부제 크기를 기존의 2/3 수준인 24px로 조정 */
         .sub-title {
-            font-size: 24px; /* 기존 34px에서 약 2/3 수준인 24px로 조정 */
+            font-size: 24px;
             font-weight: bold;
             color: #555;
             margin-top: 5px;
@@ -35,31 +36,26 @@ st.markdown("""
             font-size: 18px;
             font-weight: bold;
             color: #ff4b4b;
-            margin-bottom: 5px;
+            margin-bottom: 15px;
+            text-align: center;
         }
         
-        /* 버튼을 감싸는 div가 중앙에 오도록 하고, 버튼 자체를 중앙 정렬 */
-        div.stButton {
-            text-align: center;
+        /* 버튼 중앙 정렬을 위한 핵심 설정 */
+        .stButton {
             display: flex;
             justify-content: center;
         }
         
-        div.stButton > button {
-            width: 400px; /* 버튼 너비를 고정하여 중앙 배치를 명확히 함 */
-            height: 3.5rem;
+        .stButton > button {
+            width: 450px !important; /* 버튼 너비를 고정하여 중앙 균형 유지 */
+            height: 3.5rem !important;
             font-size: 1.5rem !important;
             font-weight: bold !important;
             background-color: #007bff !important;
             color: white !important;
-            border-radius: 12px;
-            border: none;
-            box-shadow: 0px 4px 10px rgba(0, 123, 255, 0.3);
-            transition: all 0.3s;
-        }
-        div.stButton > button:hover {
-            background-color: #0056b3 !important;
-            transform: translateY(-2px);
+            border-radius: 12px !important;
+            border: none !important;
+            box-shadow: 0px 4px 10px rgba(0, 123, 255, 0.3) !important;
         }
     </style>
 
@@ -271,3 +267,4 @@ if st.button("선택 지역 자동 확인 시작"):
         
         # 테이블 출력
         st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
+
