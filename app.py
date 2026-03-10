@@ -61,7 +61,6 @@ target_sites = [
     ["전북특별자치도", "https://www.jeonbuk.go.kr/board/list.jeonbuk?boardId=BBS_0000129&menuCd=DOM_000000102002005000&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
     ["전북_군산", "https://www.gunsan.go.kr/main/m141"],
     ["전북_전주", "https://www.jeonju.go.kr/planweb/board/list.9is?boardUid=9be517a7914528ce01930aa3ddc26cf0&contentUid=ff8080818990c349018b041a879f395a&searchType=dataTitle&keyword=%EA%B5%90%EC%84%AD"],
-    ["경상남도", "https://www.gyeongnam.go.kr/gosi/index.gyeong?search_key=title&search_val=%EA%B5%90%EC%84%AD"],
     ["경남_김해", "https://www.gimhae.go.kr/03360/00023/00029.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
     ["경남_의령", "https://www.uiryeong.go.kr/board/list.uiryeong?boardId=BBS_0000070&menuCd=DOM_000000203003001001&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
     ["경남_창원", "https://www.changwon.go.kr/cwportal/10310/10438/10439.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
@@ -180,6 +179,7 @@ if st.button("🚀 공고 확인 시작"):
     m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
     m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
     st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
+
 
 
 
