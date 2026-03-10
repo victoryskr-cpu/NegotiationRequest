@@ -6,15 +6,10 @@ import time
 import re
 from io import BytesIO
 
-# 1. 페이지 설정
-st.set_page_config(
-    page_title="교섭공고 알리미", 
-    page_icon="🔍", 
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# 1. 페이지 기본 설정
+st.set_page_config(page_title="교섭공고 알리미", page_icon="🔍", layout="wide", initial_sidebar_state="expanded")
 
-# 2. CSS 스타일 설정 (버튼 정중앙, 테이블 정렬)
+# 2. 디자인 (CSS) - 버튼 중앙 정렬 및 테이블 가독성 강화
 st.markdown("""
     <style>
         .header-container { text-align: center; margin-bottom: 20px; }
@@ -22,39 +17,21 @@ st.markdown("""
         .sub-title { font-size: 24px; font-weight: bold; color: #555; margin-top: 5px; margin-bottom: 30px; }
         .status-text { font-size: 18px; font-weight: bold; color: #ff4b4b; margin-bottom: 15px; text-align: center; }
         
-        /* 버튼을 화면 정중앙으로 */
-        div.stButton {
-            display: flex;
-            justify-content: center;
-            margin: 30px 0;
-        }
-        
+        /* 파란색 실행 버튼 정중앙 배치 */
+        div.stButton { display: flex; justify-content: center; margin: 30px 0; }
         div.stButton > button {
-            width: 450px !important;
-            height: 4rem !important;
-            font-size: 1.6rem !important;
-            font-weight: bold !important;
-            background-color: #007bff !important;
-            color: white !important;
-            border-radius: 12px !important;
-            border: none !important;
+            width: 450px !important; height: 4rem !important;
+            font-size: 1.6rem !important; font-weight: bold !important;
+            background-color: #007bff !important; color: white !important;
+            border-radius: 12px !important; border: none !important;
             box-shadow: 0px 4px 15px rgba(0, 123, 255, 0.4) !important;
         }
 
-        /* 결과 테이블 중앙 정렬 및 너비 조정 */
-        .result-table {
-            margin-left: auto;
-            margin-right: auto;
-            border-collapse: collapse;
-            width: 95%;
-            text-align: center;
-        }
+        /* 결과 테이블 중앙 정렬 및 너비 확장 */
+        .result-table { margin-left: auto; margin-right: auto; border-collapse: collapse; width: 95%; text-align: center; border: 1px solid #ddd; }
         .result-table th { background-color: #f8f9fa; padding: 12px; border: 1px solid #ddd; text-align: center !important; }
-        .result-table td { padding: 10px; border: 1px solid #ddd; vertical-align: middle; text-align: center !important; }
-        
-        .col-name { width: 20%; }
-        .col-link { width: 25%; }
-        .col-status { width: 55%; white-space: nowrap; }
+        .result-table td { padding: 10px; border: 1px solid #ddd; vertical-align: middle; text-align: center !important; font-size: 16px; }
+        .col-status { white-space: nowrap; font-weight: bold; }
     </style>
 
     <div class="header-container">
@@ -64,7 +41,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# 3. 데이터 설정 (따옴표 오류 완벽 수정)
+# 3. 데이터 설정 (에러 방지를 위해 간결하게 정리)
 sort_order = ["서울특별시", "부산광역시", "대구광역시", "울산광역시", "강원도", "전라북도", "경상북도", "경상남도", "충청남도", "충청북도"]
 raw_target_data = {
     "서울특별시": [
@@ -80,7 +57,4 @@ raw_target_data = {
         ["서울_동작", "https://www.dongjak.go.kr/portal/bbs/B0001297/list.do?menuNo=201317&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD"],
         ["서울_마포", "https://www.mapo.go.kr/site/main/nPortal/list?sv=%EA%B5%90%EC%84%AD"],
         ["서울_성동", "https://www.sd.go.kr/main/selectBbsNttList.do?key=1473&bbsNo=184&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-        ["서울_성북", "https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchCnd2=notAncmtSj&searchKrwd=교섭"],
-        ["서울_영등포", "https://www.ydp.go.kr/www/selectEminwonList.do?key=2851&searchCnd=B_Subject&searchKrwd=교섭"],
-        ["서울_용산", "https://www.yongsan.go.kr/portal/bbs/B0000095/list.do?menuNo=200233&searchCnd=1&searchWrd=교섭"],
-        ["서울_은평", "
+        ["서울_성북", "
