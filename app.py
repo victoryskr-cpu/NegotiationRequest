@@ -10,250 +10,544 @@ from io import BytesIO
 # -------------------------------------------------
 # 기본 설정
 # -------------------------------------------------
-
 st.set_page_config(
     page_title="교섭공고 알리미",
     page_icon="🔍",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # -------------------------------------------------
 # 스타일
 # -------------------------------------------------
-
 st.markdown("""
-<style>
+    <style>
+    .header-container {
+        text-align: center;
+        margin-top: -20px;
+        margin-bottom: 20px;
+    }
 
-.header-container {
-    text-align:center;
-    margin-top:-20px;
-}
+    .main-title {
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
 
-.main-title{
-    font-size:2rem;
-    font-weight:bold;
-}
+    .sub-title {
+        font-size: 1.2rem;
+        color: #444;
+        font-weight: 500;
+    }
 
-.sub-title{
-    font-size:1.2rem;
-    color:#555;
-}
+    .status-text {
+        font-weight: bold;
+        color: #ff4b4b;
+        display: block;
+        text-align: center;
+        margin-bottom: 10px;
+    }
 
-.status-text{
-    font-weight:bold;
-    color:#ff4b4b;
-    text-align:center;
-}
+    .stButton {
+        display: flex;
+        justify-content: center;
+    }
 
-.stButton{
-    display:flex;
-    justify-content:center;
-}
+    .stButton > button {
+        background-color: #007BFF !important;
+        color: white !important;
+        border-radius: 10px !important;
+        min-height: 3.5em !important;
+        font-weight: 900 !important;
+        font-size: 1.1rem !important;
+        border: none !important;
+    }
 
-.stButton>button{
-    background-color:#007BFF;
-    color:white;
-    font-size:1.1rem;
-    font-weight:900;
-    border-radius:10px;
-    height:55px;
-}
+    .stButton > button:hover {
+        background-color: #0056b3 !important;
+        color: white !important;
+    }
 
-</style>
+    .manual-title {
+        font-size: 1.3rem;
+        font-weight: bold;
+        margin-bottom: 0px;
+    }
 
-<div class="header-container">
-<h1 class="main-title">지자체 교섭요구공고 확인</h1>
-<p class="sub-title">(돌봄사업장 지역 공고 모니터링)</p>
-</div>
+    .manual-subtitle {
+        font-size: 0.9rem;
+        color: #666;
+        display: block;
+        margin-bottom: 10px;
+    }
 
+    .guide-box {
+        background-color: #f0f2f6;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        border: 1px dashed #ff4b4b;
+        margin-bottom: 20px;
+        font-weight: bold;
+        color: #ff4b4b;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        text-align: center !important;
+        background-color: #f8f9fa;
+    }
+
+    td {
+        text-align: center !important;
+        vertical-align: middle;
+    }
+    </style>
+
+    <div class="header-container">
+        <h1 class="main-title">지자체 교섭요구공고 확인</h1>
+        <p class="sub-title">(돌봄사업장 지역 공고 모니터링)</p>
+    </div>
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------
 # 데이터
 # -------------------------------------------------
-
 sort_order = [
-"서울특별시",
-"부산광역시",
-"대구광역시",
-"울산광역시",
-"강원도",
-"경기도",
-"전라북도",
-"경상북도",
-"경상남도",
-"충청남도",
-"충청북도"
+    "서울특별시", "부산광역시", "대구광역시", "울산광역시", "강원도",
+    "경기도", "전라북도", "경상북도", "경상남도", "충청남도", "충청북도"
 ]
 
 raw_target_data = {
-
-"서울특별시":[
-["서울특별시","https://www.seoul.go.kr/news/news_notice.do?bbsNo=277&srchText=교섭"],
-["서울_강남","https://www.gangnam.go.kr/notice/list.do?mid=ID05_040201&keyfield=BNI_MAIN_TITLE&keyword=교섭"],
-["서울_강동","https://www.gangdong.go.kr/web/newportal/notice/01?sv=교섭"],
-["서울_강서","https://www.gangseo.seoul.kr/gs040301?srchKey=sj&srchText=교섭"],
-["서울_구로","https://www.guro.go.kr/www/selectBbsNttList.do?key=1791&bbsNo=663&searchCnd=SJ&searchKrwd=교섭"],
-["서울_금천","https://www.geumcheon.go.kr/portal/tblSeolGosiDetailList.do?key=294&rep=1&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD"],
-["서울_노원","https://www.nowon.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1003&q_searchVal=%EA%B5%90%EC%84%AD"],
-["서울_도봉","https://www.dobong.go.kr/WDB_DEV/gosigong_go/default.asp?strSearchType=1&strSearchKeyword=%EA%B5%90%EC%84%AD"],
-["서울_동대문","https://www.ddm.go.kr/www/selectEminwonWebList.do?key=3291&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
-["서울_동작","https://www.dongjak.go.kr/portal/bbs/B0001297/list.do?menuNo=201317&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD"],
-["서울_마포","https://www.mapo.go.kr/site/main/nPortal/list?sv=%EA%B5%90%EC%84%AD"],
-["서울_성동","https://www.sd.go.kr/main/selectBbsNttList.do?key=1473&bbsNo=184&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-["서울_성북","https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchCnd2=notAncmtSj&searchKrwd=교섭"],
-["서울_영등포","https://www.ydp.go.kr/www/selectEminwonList.do?key=2851&searchCnd=B_Subject&searchKrwd=교섭"],
-["서울_용산","https://www.yongsan.go.kr/portal/bbs/B0000095/list.do?menuNo=200233&searchCnd=1&searchWrd=교섭"],
-["서울_은평","https://www.ep.go.kr/www/selectEminwonList.do?key=754&searchCnd=notAncmtSj&searchKrwd=교섭"],
-["서울_중랑","https://www.jungnang.go.kr/portal/bbs/list/B0000117.do?menuNo=200475&searchWrd=교섭"]
-],
-
-"부산광역시":[
-["부산광역시","https://www.busan.go.kr/nbgosi/list?schKeyType=A&srchText=%EA%B5%90%EC%84%AD"],
-["부산_남구","https://www.bsnamgu.go.kr/index.namgu?menuCd=DOM_000000105001002000&search_key=title&search_val=%EA%B5%90%EC%84%AD"],
-["부산_동래구","https://www.dongnae.go.kr/index.dongnae?menuCd=DOM_000000103001003000&search_key=title&search_val=%EA%B5%90%EC%84%AD"]
-],
-
-"대구광역시":[
-["대구_동구","https://www.dong.daegu.kr/portal/saeol/gosi/list.do?mid=0201020000&searchKrwd=%EA%B5%90%EC%84%AD"],
-["대구_달서구","https://www.dalseo.daegu.kr/index.do?menu_id=10000104&searchKey=sj&searchKeyword=%EA%B5%90%EC%84%AD"],
-["대구_중구","https://www.jung.daegu.kr/new/pages/administration/page.html?mc=0159&search_key=sj&search_keyword=%EA%B5%90%EC%84%AD"]
-],
-
-"울산광역시":[],
-"강원도":[
-["강원특별자치도","https://state.gwd.go.kr/portal/bulletin/notification?searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
-["강원_춘천","https://www.chuncheon.go.kr/cityhall/administrative-info/notice-info/notice-announcement/?searchCnd=SJ&searchWrd=%EA%B5%90%EC%84%AD"]
-]
+    "서울특별시": [
+        ["서울특별시", "https://www.seoul.go.kr/news/news_notice.do?bbsNo=277&srchText=교섭"],
+        ["서울_강남", "https://www.gangnam.go.kr/notice/list.do?mid=ID05_040201&keyfield=BNI_MAIN_TITLE&keyword=교섭"],
+        ["서울_강동", "https://www.gangdong.go.kr/web/newportal/notice/01?sv=교섭"],
+#        ["서울_강북", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&bbsId=&cl1Cd=&optn5=&pageIndex=1&searchCnd2=&searchCnd=&searchWrd=%EA%B5%90%EC%84%AD"],
+        ["서울_강서", "https://www.gangseo.seoul.kr/gs040301?srchKey=sj&srchText=교섭"],
+        ["서울_구로", "https://www.guro.go.kr/www/selectBbsNttList.do?key=1791&bbsNo=663&searchCnd=SJ&searchKrwd=교섭"],
+        ["서울_금천", "https://www.geumcheon.go.kr/portal/tblSeolGosiDetailList.do?key=294&rep=1&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["서울_노원", "https://www.nowon.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1003&q_searchVal=%EA%B5%90%EC%84%AD"],
+        ["서울_도봉", "https://www.dobong.go.kr/WDB_DEV/gosigong_go/default.asp?strSearchType=1&strSearchKeyword=%EA%B5%90%EC%84%AD"],
+        ["서울_동대문", "https://www.ddm.go.kr/www/selectEminwonWebList.do?key=3291&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["서울_동작", "https://www.dongjak.go.kr/portal/bbs/B0001297/list.do?menuNo=201317&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD"],
+        ["서울_마포", "https://www.mapo.go.kr/site/main/nPortal/list?sv=%EA%B5%90%EC%84%AD"],
+        ["서울_성동", "https://www.sd.go.kr/main/selectBbsNttList.do?key=1473&bbsNo=184&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["서울_성북", "https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchCnd2=notAncmtSj&searchKrwd=교섭"],
+        ["서울_영등포", "https://www.ydp.go.kr/www/selectEminwonList.do?key=2851&searchCnd=B_Subject&searchKrwd=교섭"],
+        ["서울_용산", "https://www.yongsan.go.kr/portal/bbs/B0000095/list.do?menuNo=200233&searchCnd=1&searchWrd=교섭"],
+        ["서울_은평", "https://www.ep.go.kr/www/selectEminwonList.do?key=754&searchCnd=notAncmtSj&searchKrwd=교섭"],
+        ["서울_중랑", "https://www.jungnang.go.kr/portal/bbs/list/B0000117.do?menuNo=200475&searchWrd=교섭"]
+    ],
+    "부산광역시": [
+        ["부산광역시", "https://www.busan.go.kr/nbgosi/list?schKeyType=A&srchText=%EA%B5%90%EC%84%AD"],
+        ["부산_남구", "https://www.bsnamgu.go.kr/index.namgu?menuCd=DOM_000000105001002000&search_key=title&search_val=%EA%B5%90%EC%84%AD"],
+        ["부산_동래구", "https://www.dongnae.go.kr/index.dongnae?menuCd=DOM_000000103001003000&search_key=title&search_val=%EA%B5%90%EC%84%AD"]
+    ],
+    "대구광역시": [
+        ["대구_동구", "https://www.dong.daegu.kr/portal/saeol/gosi/list.do?mid=0201020000&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["대구_달서구", "https://www.dalseo.daegu.kr/index.do?menu_id=10000104&searchKey=sj&searchKeyword=%EA%B5%90%EC%84%AD"],
+        ["대구_중구", "https://www.jung.daegu.kr/new/pages/administration/page.html?mc=0159&search_key=sj&search_keyword=%EA%B5%90%EC%84%AD"]
+    ],
+    "울산광역시": [],
+    "강원도": [
+        ["강원특별자치도", "https://state.gwd.go.kr/portal/bulletin/notification?searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
+        ["강원_춘천", "https://www.chuncheon.go.kr/cityhall/administrative-info/notice-info/notice-announcement/?searchCnd=SJ&searchWrd=%EA%B5%90%EC%84%AD"]
+    ],
+    "경기도": [
+#        ["경기도", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547#page=1#keyfield=SUBJECTANDREMARK#keyword=%EA%B5%90%EC%84%AD"],
+        ["경기_구리", "https://www.guri.go.kr/www/selectGosiNttList.do?key=387&searchCnd=ALL&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ],
+    "전라북도": [
+        ["전북특별자치도", "https://www.jeonbuk.go.kr/board/list.jeonbuk?boardId=BBS_0000129&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
+        ["전북_군산", "https://www.gunsan.go.kr/main/m141"],
+        ["전북_전주", "https://www.jeonju.go.kr/planweb/board/list.9is?boardUid=9be517a7914528ce01930aa3ddc26cf0&contentUid=ff8080818990c349018b041a879f395a&searchType=dataTitle&keyword=%EA%B5%90%EC%84%AD"]
+    ],
+    "경상북도": [
+        ["경상북도", "https://www.gb.go.kr/Main/page.do?bdName=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&mnu_uid=6789&word=%EA%B5%90%EC%84%AD"],
+        ["경북_칠곡", "https://www.chilgok.go.kr/portal/saeol/gosi/list.do?mId=0201030000"]
+    ],
+    "경상남도": [
+        ["경남_김해", "https://www.gimhae.go.kr/03360/00023/00029.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
+        ["경남_의령", "https://www.uiryeong.go.kr/board/list.uiryeong?boardId=BBS_0000070&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
+        ["경남_창원", "https://www.changwon.go.kr/cwportal/10310/10438/10439.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
+        ["경남_함안", "https://www.haman.go.kr/00960/00962.web?stype=title&sstring=%EA%B5%90%EC%84%AD"]
+    ],
+    "충청남도": [
+        ["충청남도", "https://www.chungnam.go.kr/cnportal/province/province/list.do?searchWrd=%EA%B5%90%EC%84%AD"],
+        ["충남_서산", "https://www.seosan.go.kr/www/contents.do?key=1258"],
+        ["충남_아산", "https://www.asan.go.kr/main/cms/?no=257"],
+        ["충남_논산", "https://nonsan.go.kr/kor/html/sub03/03010201.html"]
+    ],
+    "충청북도": [
+        ["충청북도", "https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["충북_괴산", "https://www.goesan.go.kr/www/selectBbsNttList.do?key=604&searchCnd=SJ&searchKrwd=교섭"],
+        ["충북_보은", "https://www.boeun.go.kr/www/selectBbsNttList.do?key=194&bbsNo=66&searchCnd=SJ&searchKrwd=교섭"],
+        ["충북_옥천", "https://www.oc.go.kr/www/selectBbsNttList.do?key=236&bbsNo=40&searchCnd=SJ&searchKrwd=교섭"],
+        ["충북_음성", "https://www.eumseong.go.kr/www/selectEminwonList.do?key=352&searchCnd=B_Subject&searchKrwd=교섭"],
+        ["충북_제천", "https://www.jecheon.go.kr/www/selectBbsNttList.do?key=5233&bbsNo=18&searchCnd=SJ&searchKrwd=교섭"],
+        ["충북_진천", "https://www.jincheon.go.kr/home/sub.do?menukey=235&searchCnd=sj&searchKrwd=교섭"]
+    ]
 }
 
-# -------------------------------------------------
-# 크롤링 함수
-# -------------------------------------------------
+manual_data = [
+    ["보건복지부", "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003"],
+    ["서울_강북구", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&bbsId=&cl1Cd=&optn5=&pageIndex=1&searchCnd2=&searchCnd=&searchWrd=%EA%B5%90%EC%84%AD"],
+    ["서울_관악구", "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/List.do?typeCode=1&searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
+    ["서울_서대문구", "https://www.sdm.go.kr/news/notice/notice.do?mode=list&srchTitle=%EA%B5%90%EC%84%AD"],
+    ["서울_송파구", "https://www.songpa.go.kr/www/selectGosiList.do?key=2776&not_ancmt_se_code=&searchCnd=SJ&searchKrwd=교섭"],
+    ["서울_양천구", "https://www.yangcheon.go.kr/site/yangcheon/ex/bbs/List.do?cbIdx=254#"],
+    ["서울_종로구", "https://www.jongno.go.kr/portal/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000271&menuNo=1756&menuId=1756"],
+    ["서울_중구", "https://www.junggu.seoul.kr/content/boards/62/list?search_column=title&search_keyword=교섭"],
+    ["부산_사상구", "https://www.sasang.go.kr/tour/board/list.sasang?boardId=BBS_0000001&menuIdx=75&searchCnd=0&searchWrd=%EA%B5%90%EC%84%AD"],
+    ["대구광역시", "https://www.daegu.go.kr/index.do?menu_id=00000052&srchVal=%EA%B5%90%EC%84%AD&srchKey=sj"],
+    ["대구_남구", "https://nam.daegu.kr/index.do?menu_id=00000851"],
+    ["울산광역시", "https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan?mId=001004002000000000"],
+    ["울산_남구", "https://www.ulsannamgu.go.kr/cop/bbs/selectSaeolGosiList.do"],
+    ["울산_동구", "https://www.donggu.ulsan.kr/donggu/contents/contents.do?mId=4040100"],
+    ["울산_북구", "https://www.bukgu.ulsan.kr/lay1/S1T86C456/contents.do"],
+    ["울산_울주군", "https://www.ulju.ulsan.kr/ulju/saeol/gosi/list.do?mId=0403010000"],
+    ["울산_중구", "https://www.junggu.ulsan.kr/index.ulsan?menuCd=DOM_000000102004001000"],
+    ["경기도", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547#page=1#keyfield=SUBJECTANDREMARK#keyword=%EA%B5%90%EC%84%AD"],
+    ["경기_고양", "https://www.goyang.go.kr/www/link/BD_notice.do?se=01"],
+    ["경기_광주", "https://www.gjcity.go.kr/portal/saeol/gosi/list.do?mId=0202010000"],
+    ["경기_남양주", "https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492"],
+    ["경기_평택", "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosi/list.do?mid=0401020100"],
+    ["경북_경주", "https://www.gyeongju.go.kr/open_content/ko/page.do?mnu_uid=423"],
+    ["경북_경산", "https://www.gbgs.go.kr/open_content/ko/page.do?mnu_uid=2160&"],
+    ["경북_김천", "https://www.gc.go.kr/portal/saeol/gosi/list.do?mId=1202180100"],
+    ["경북_안동", "https://www.andong.go.kr/portal/saeol/gosi/list.do?mId=0401010000"],
+    ["경북_구미", "https://www.gumi.go.kr/portal/saeol/gosi/list.do?seCode=01&mid=0401040000"],
+    ["경북_포항", "https://www.pohang.go.kr/portal/saeol/gosi/list.do?mid=0202010000"],
+    ["경상남도", "https://www.gyeongnam.go.kr/index.gyeong?menuCd=DOM_000000135003009001"],
+    ["충남_공주", "https://www.gongju.go.kr/prog/saeolGosi/GOSI_01/sub04_03_01/list.do"],
+    ["충남_당진", "https://www.dangjin.go.kr/kor/sub03_02_01_01.do"],
+    ["충남_천안", "https://www.cheonan.go.kr/kor/sub02_02_01.do"],
+#    ["충청북도", "https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["충북_단양", "https://www.danyang.go.kr/dy21/976"],
+    ["충북_영동", "https://www.yd21.go.kr/kr/html/sub02/020103.html?mode=L"],
+    ["충북_증평", "http://www.jp.go.kr/kor/sub03_01_03.do"],
+    ["충북_청주", "https://www.cheongju.go.kr/www/selectEminwonNoticeList.do?key=281&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["충북_충주", "https://www.chungju.go.kr/www/selectEminwonList.do?key=510&ancmt_sj=%EA%B5%90%EC%84%AD"]
+]
 
-@st.cache_data(ttl=600)
-def check_site(name,url):
+target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
+manual_sites = sorted(manual_data, key=lambda x: x[0])
+
+# -------------------------------------------------
+# 유틸
+# -------------------------------------------------
+SESSION_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/122.0.0.0 Safari/537.36"
+    )
+}
+
+def create_session():
+    session = requests.Session()
+    session.headers.update(SESSION_HEADERS)
+    return session
+
+def extract_clean_text(html: str) -> str:
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "noscript"]):
+        tag.decompose()
+    text = soup.get_text(" ", strip=True)
+    text = re.sub(r"\s+", " ", text)
+    return text
+
+def build_recent_day_patterns(days: int = 8):
+    today = datetime.now()
+    patterns = []
+
+    for i in range(days):
+        dt = today - timedelta(days=i)
+        patterns.extend([
+            dt.strftime("%Y-%m-%d"),
+            dt.strftime("%Y.%m.%d"),
+            dt.strftime("%Y/%m/%d"),
+            dt.strftime("%m.%d"),
+            dt.strftime("%m-%d"),
+            dt.strftime("%m/%d"),
+            dt.strftime("%y-%m-%d"),
+            dt.strftime("%y.%m.%d"),
+            dt.strftime("%y/%m/%d"),
+        ])
+
+    return list(dict.fromkeys(patterns))
+
+def classify_status_from_text(clean_text: str, keyword: str = "교섭", recent_days: int = 8):
+    if keyword not in clean_text:
+        return "⚪ 결과 없음", "", ""
+
+    recent_day_patterns = build_recent_day_patterns(recent_days)
+
+    for match in re.finditer(keyword, clean_text):
+        start = max(0, match.start() - 100)
+        end = min(len(clean_text), match.end() + 100)
+        context = clean_text[start:end]
+
+        compact_context = context.replace(" ", "")
+        compact_context2 = re.sub(r"[./-]", "", compact_context)
+
+        for day in recent_day_patterns:
+            day_compact = re.sub(r"[./-]", "", day)
+            if day in context or day_compact in compact_context2:
+                return "🔴 신규 가능성 높음", day, context
+
+    first_context = ""
+    first_match = re.search(keyword, clean_text)
+    if first_match:
+        start = max(0, first_match.start() - 100)
+        end = min(len(clean_text), first_match.end() + 100)
+        first_context = clean_text[start:end]
+
+    return "🟡 기존 공고 존재", "", first_context
+
+@st.cache_data(ttl=600, show_spinner=False)
+def check_site_stable(name: str, url: str):
+    checked_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    session = create_session()
 
     try:
+        response = session.get(url, timeout=15)
+        status_code = response.status_code
+        response.raise_for_status()
 
-        headers={"User-Agent":"Mozilla/5.0"}
+        response.encoding = response.apparent_encoding or response.encoding
+        clean_text = extract_clean_text(response.text)
 
-        r=requests.get(url,headers=headers,timeout=15)
-        r.raise_for_status()
+        status, detected_date, detected_context = classify_status_from_text(clean_text)
 
-        soup=BeautifulSoup(r.text,"html.parser")
+        return {
+            "지자체명": name,
+            "링크": url,
+            "상태": status,
+            "응답코드": status_code,
+            "감지일자": detected_date,
+            "확인시각": checked_at,
+            "감지문맥": detected_context
+        }
 
-        for s in soup(["script","style"]):
-            s.extract()
+    except requests.exceptions.Timeout:
+        return {
+            "지자체명": name,
+            "링크": url,
+            "상태": "⚠️ 타임아웃",
+            "응답코드": "",
+            "감지일자": "",
+            "확인시각": checked_at,
+            "감지문맥": ""
+        }
 
-        text=soup.get_text(" ",strip=True)
+    except requests.exceptions.HTTPError as e:
+        status_code = e.response.status_code if e.response is not None else ""
+        return {
+            "지자체명": name,
+            "링크": url,
+            "상태": "⚠️ HTTP 오류",
+            "응답코드": status_code,
+            "감지일자": "",
+            "확인시각": checked_at,
+            "감지문맥": ""
+        }
 
-        if "교섭" not in text:
-            return [name,url,"⚪ 결과 없음"]
+    except requests.exceptions.RequestException:
+        return {
+            "지자체명": name,
+            "링크": url,
+            "상태": "⚠️ 요청 실패",
+            "응답코드": "",
+            "감지일자": "",
+            "확인시각": checked_at,
+            "감지문맥": ""
+        }
 
-        today=datetime.now()
+    except Exception:
+        return {
+            "지자체명": name,
+            "링크": url,
+            "상태": "⚠️ 파싱 오류",
+            "응답코드": "",
+            "감지일자": "",
+            "확인시각": checked_at,
+            "감지문맥": ""
+        }
 
-        for i in range(7):
+def extract_href_for_excel(value):
+    if isinstance(value, str) and 'href="' in value:
+        match = re.search(r'href="(.*?)"', value)
+        if match:
+            return match.group(1)
+    return value
 
-            d=(today-timedelta(days=i)).strftime("%Y.%m.%d")
+def to_excel(df: pd.DataFrame):
+    output = BytesIO()
+    df_excel = df.copy()
 
-            if d in text:
+    if "링크" in df_excel.columns:
+        df_excel["링크"] = df_excel["링크"].apply(extract_href_for_excel)
 
-                return [name,url,"🔴 신규 가능성 높음"]
+    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+        df_excel.to_excel(writer, index=False, sheet_name="교섭공고결과")
 
-        return [name,url,"🟡 기존 공고 존재"]
+        workbook = writer.book
+        worksheet = writer.sheets["교섭공고결과"]
 
-    except:
+        header_format = workbook.add_format({
+            "bold": True,
+            "align": "center",
+            "valign": "vcenter",
+            "bg_color": "#D9EAF7",
+            "border": 1
+        })
 
-        return [name,url,"⚠️ 확인 필요"]
+        cell_format = workbook.add_format({
+            "align": "center",
+            "valign": "vcenter",
+            "border": 1,
+            "text_wrap": True
+        })
+
+        for col_num, value in enumerate(df_excel.columns.values):
+            worksheet.write(0, col_num, value, header_format)
+
+        col_widths = {
+            "지자체명": 18,
+            "링크": 45,
+            "상태": 20,
+            "응답코드": 10,
+            "감지일자": 14,
+            "확인시각": 22,
+            "감지문맥": 60
+        }
+
+        for idx, col in enumerate(df_excel.columns):
+            worksheet.set_column(idx, idx, col_widths.get(col, 20), cell_format)
+
+    return output.getvalue()
+
+def make_clickable_link(url: str, text: str = "이동하여 검색"):
+    return f'<a href="{url}" target="_blank">{text}</a>'
+
+def group_manual_sites(manual_sites):
+    grouped = {}
+
+    for name, url in manual_sites:
+        if "_" in name:
+            region_key = name.split("_")[0]
+        else:
+            region_key = name
+
+        if region_key not in grouped:
+            grouped[region_key] = []
+
+        grouped[region_key].append([name, url])
+
+    return grouped
 
 # -------------------------------------------------
 # 사이드바
 # -------------------------------------------------
+def on_all_clicked():
+    for region in sort_order:
+        st.session_state[f"sidebar_{region}"] = st.session_state["all_regions"]
 
-st.sidebar.header("검색 지역")
+st.sidebar.header("📍 검색 지역 설정")
+st.sidebar.checkbox("전체 지역 선택", value=False, key="all_regions", on_change=on_all_clicked)
 
-selected_regions=[]
+selected_regions = []
+for region in sort_order:
+    count = len(target_data[region])
 
-for r in sort_order:
+    if f"sidebar_{region}" not in st.session_state:
+        st.session_state[f"sidebar_{region}"] = False
 
-    if r in raw_target_data:
+    is_checked = st.sidebar.checkbox(f"{region} ({count})", key=f"sidebar_{region}")
+    if is_checked and count > 0:
+        selected_regions.append(region)
 
-        if st.sidebar.checkbox(r):
+target_sites = []
+for reg in selected_regions:
+    target_sites.extend(target_data[reg])
 
-            selected_regions.append(r)
+# -------------------------------------------------
+# 안내
+# -------------------------------------------------
+if not selected_regions:
+    st.markdown(
+        '<div class="guide-box">왼쪽 상단 [ > ] 화살표 눌러 지역 선택!</div>',
+        unsafe_allow_html=True
+    )
 
 # -------------------------------------------------
 # 실행 버튼
 # -------------------------------------------------
+status_placeholder = st.empty()
 
-status_placeholder=st.empty()
-
-col1,col2,col3=st.columns([1,2,1])
-
+col1, col2, col3 = st.columns([1, 2.2, 1])
 with col2:
-
-    run=st.button("선택 지역 자동 확인 시작",use_container_width=True)
+    run_clicked = st.button("선택 지역 자동 확인 시작", use_container_width=True)
 
 # -------------------------------------------------
 # 실행
 # -------------------------------------------------
-
-if run:
-
-    sites=[]
-
-    for r in selected_regions:
-
-        sites.extend(raw_target_data[r])
-
-    if not sites:
-
-        st.warning("지역을 선택해주세요")
-
+if run_clicked:
+    if not target_sites:
+        st.warning("지역을 먼저 선택해주세요.")
     else:
+        results = []
+        progress_bar = st.progress(0)
 
-        results=[]
-
-        progress=st.progress(0)
-
-        for i,(name,url) in enumerate(sites):
-
-            percent=int((i+1)/len(sites)*100)
-
+        for i, (name, url) in enumerate(target_sites):
+            percent = int(((i + 1) / len(target_sites)) * 100)
             status_placeholder.markdown(
-            f"<div class='status-text'>⏳ {percent}% 확인중 : {name}</div>",
-            unsafe_allow_html=True
+                f"<span class='status-text'>⏳ [{percent}%] 확인 중: {name}</span>",
+                unsafe_allow_html=True
             )
 
-            results.append(check_site(name,url))
+            result = check_site_stable(name, url)
+            results.append(result)
 
-            progress.progress((i+1)/len(sites))
-
+            progress_bar.progress((i + 1) / len(target_sites))
             time.sleep(0.05)
 
-        status_placeholder.success(f"검사 완료 (총 {len(sites)}개)")
+        status_placeholder.success(f"✅ 검사 완료! (총 {len(target_sites)}개)")
 
-        df=pd.DataFrame(results,columns=["지자체","링크","상태"])
+        df = pd.DataFrame(results)
 
-        df_display=df.copy()
-
-        df_display["링크"]=df_display["링크"].apply(
-        lambda x:f'<a href="{x}" target="_blank">이동</a>'
-        )
-
-        st.write(df_display.to_html(escape=False,index=False),unsafe_allow_html=True)
-
-        # 엑셀 다운로드
-
-        output=BytesIO()
-
-        with pd.ExcelWriter(output,engine="xlsxwriter") as writer:
-
-            df.to_excel(writer,index=False)
+        df_display = df.copy()
+        df_display["링크"] = df_display["링크"].apply(lambda x: make_clickable_link(x))
 
         st.download_button(
-        "결과 엑셀 다운로드",
-        data=output.getvalue(),
-        file_name=f"교섭결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx"
+            label="📥 결과 엑셀 내려받기",
+            data=to_excel(df),
+            file_name=f"교섭결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
+        st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
+
+# -------------------------------------------------
+# 직접 확인 리스트
+# -------------------------------------------------
+# -------------------------------------------------
+# 직접 확인 리스트
+# -------------------------------------------------
+st.markdown("---")
+st.markdown(f"""
+    <div style="display: flex; align-items: baseline; text-align: left; margin-bottom: 10px;">
+        <span class="manual-title" style="margin-right: 8px;">직접 확인 리스트</span>
+        <span class="manual-subtitle">({len(manual_sites)}개 지역)</span>
+    </div>
+""", unsafe_allow_html=True)
+
+m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
+m_df["링크"] = m_df["링크"].apply(lambda x: make_clickable_link(x))
+st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
