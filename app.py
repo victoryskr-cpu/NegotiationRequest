@@ -472,7 +472,6 @@ def check_gyeongnam(name: str, url: str):
 def check_gyeonggi(name: str, url: str):
     """
     경기도 게시판 검사 (AJAX API 기반)
-    최근 게시글을 받아 교섭 키워드 탐색
     """
 
     session = create_session()
@@ -498,7 +497,14 @@ def check_gyeonggi(name: str, url: str):
 
         data = response.json()
 
-        items = data.get("list") or data.get("rows") or []
+        # 다양한 JSON 구조 대응
+        items = (
+            data.get("list")
+            or data.get("rows")
+            or data.get("data", {}).get("list")
+            or data.get("result", {}).get("list")
+            or []
+        )
 
         if not items:
             return make_result(name, url, "⚪ 결과 없음")
@@ -813,6 +819,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
