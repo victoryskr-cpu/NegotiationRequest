@@ -19,7 +19,21 @@ st.markdown("""
     .main-title { font-size: 1.8rem; font-weight: bold; margin-bottom: 5px; }
     .sub-title { font-size: 1.2rem; color: #444; font-weight: 500; }
     .status-text { font-weight: bold; color: #ff4b4b; display: block; text-align: center; margin-bottom: 10px; }
-    .stButton>button { width: 100%; border-radius: 5px; min-height: 3.5em; font-weight: bold; }
+    
+    /* 버튼 스타일 수정: 파란색 배경, 굵은 글씨, 중앙 정렬 지원 */
+    .stButton { display: flex; justify-content: center; }
+    .stButton>button { 
+        width: 350px !important; 
+        background-color: #007BFF !important; 
+        color: white !important; 
+        border-radius: 10px; 
+        min-height: 3.5em; 
+        font-weight: 900 !important; /* 아주 굵게 */
+        font-size: 1.1rem !important;
+        border: none;
+    }
+    .stButton>button:hover { background-color: #0056b3 !important; }
+
     .manual-title { font-size: 1.3rem; font-weight: bold; margin-bottom: 0px; }
     .manual-subtitle { font-size: 0.9rem; color: #666; display: block; margin-bottom: 10px; }
     .guide-box { 
@@ -149,7 +163,6 @@ manual_data = [
 target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
 manual_sites = sorted(manual_data, key=lambda x: x[0])
 
-# --- [수정된 부분: 전체 선택 로직] ---
 def on_all_clicked():
     for region in sort_order:
         st.session_state[f"sidebar_{region}"] = st.session_state["all_regions"]
@@ -160,14 +173,12 @@ st.sidebar.checkbox("전체 지역 선택", value=False, key="all_regions", on_c
 selected_regions = []
 for region in sort_order:
     count = len(target_data[region])
-    # 개별 체크박스의 상태를 session_state로 직접 관리
     if f"sidebar_{region}" not in st.session_state:
         st.session_state[f"sidebar_{region}"] = False
         
     is_checked = st.sidebar.checkbox(f"{region} ({count})", key=f"sidebar_{region}")
     if is_checked and count > 0:
         selected_regions.append(region)
-# ------------------------------------
 
 target_sites = []
 for reg in selected_regions: target_sites.extend(target_data[reg])
@@ -204,26 +215,25 @@ def to_excel(df):
 if not selected_regions:
     st.markdown('<div class="guide-box">왼쪽 상단 [ > ] 화살표 눌러 지역 선택!</div>', unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns([1,3,1])
-with col2:
-    status_placeholder = st.empty()
-    if st.button("🚀 선택 지역 자동 확인 시작"):
-        if not target_sites: st.warning("지역을 먼저 선택해주세요.")
-        else:
-            results = []
-            bar = st.progress(0)
-            for i, (name, url) in enumerate(target_sites):
-                percent = int(((i + 1) / len(target_sites)) * 100)
-                status_placeholder.markdown(f"<span class='status-text'>⏳ [{percent}%] 확인 중: {name}</span>", unsafe_allow_html=True)
-                results.append(check_site_stable(name, url))
-                bar.progress((i + 1) / len(target_sites))
-                time.sleep(0.1)
-            status_placeholder.success(f"✅ 검사 완료! (총 {len(target_sites)}개)")
-            df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
-            df_display = df.copy()
-            df_display['링크'] = df_display['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
-            st.download_button(label="📥 결과 엑셀 내려받기", data=to_excel(df), file_name=f"교섭결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx", mime="application/vnd.ms-excel")
-            st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
+# 버튼 중앙 배치를 위한 호출부 수정 (아이콘 제거 및 텍스트만)
+status_placeholder = st.empty()
+if st.button("선택 지역 자동 확인 시작"):
+    if not target_sites: st.warning("지역을 먼저 선택해주세요.")
+    else:
+        results = []
+        bar = st.progress(0)
+        for i, (name, url) in enumerate(target_sites):
+            percent = int(((i + 1) / len(target_sites)) * 100)
+            status_placeholder.markdown(f"<span class='status-text'>⏳ [{percent}%] 확인 중: {name}</span>", unsafe_allow_html=True)
+            results.append(check_site_stable(name, url))
+            bar.progress((i + 1) / len(target_sites))
+            time.sleep(0.1)
+        status_placeholder.success(f"✅ 검사 완료! (총 {len(target_sites)}개)")
+        df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
+        df_display = df.copy()
+        df_display['링크'] = df_display['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
+        st.download_button(label="📥 결과 엑셀 내려받기", data=to_excel(df), file_name=f"교섭결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx", mime="application/vnd.ms-excel")
+        st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
 
 st.markdown("---")
 st.markdown(f"""
