@@ -581,7 +581,7 @@ def check_ulsan_metropolitan(name: str, url: str):
 # -------------------------------------------------
 # 공통 검사 함수
 # -------------------------------------------------
- @st.cache_data(ttl=600, show_spinner=False)
+@st.cache_data(ttl=600, show_spinner=False)
 def check_site_stable(name: str, url: str):
     # 전용 자동검색 분기
     if name == "경상남도" or "gyeongnam.go.kr/index.gyeong" in url:
@@ -830,6 +830,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
