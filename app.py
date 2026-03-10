@@ -1,8 +1,11 @@
+import pandas as pd
+import requests
+from datetime import datetime, timedelta
 import time
 import re
 from io import BytesIO
 
-# 1. 페이지 설정 및 모바일 사이드바 확장
+# 1. 페이지 설정 (반드시 import 바로 다음에 위치해야 함)
 st.set_page_config(
     page_title="교섭공고 알리미", 
     page_icon="🔍", 
@@ -23,7 +26,6 @@ st.markdown("""
         <p>(돌봄사업장 지역 공고 모니터링)</p>
     </div>
 """, unsafe_allow_html=True)
-
 # 1. 자동 확인 데이터 (요청하신 순서대로 정렬 키 정의)
 sort_order = ["서울특별시", "부산광역시", "대구광역시", "울산광역시", "강원도", "전라북도", "경상북도", "경상남도", "충청남도", "충청북도"]
 
@@ -151,7 +153,7 @@ for region in sort_order:
 target_sites = []
 for reg in selected_regions: target_sites.extend(target_data[reg])
 
-# 4. 정밀 날짜 판별 함수 (업데이트된 로직)
+# 4. 정밀 날짜 판별 함수
 def check_site_stable(name, url):
     headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
     try:
@@ -173,19 +175,18 @@ def check_site_stable(name, url):
         return [name, url, "🟡 기존 공고 존재"]
     except: return [name, url, "⚠️ 확인 요망"]
 
-# 5. 엑셀 변환 함수 추가
+# 5. 엑셀 변환 함수
 def to_excel(df):
     output = BytesIO()
-    # 링크 태그를 순수 URL로 변환하여 엑셀 저장
     df_excel = df.copy()
     df_excel['링크'] = df_excel['링크'].apply(lambda x: re.search(r'href="(.*?)"', x).group(1) if 'href=' in str(x) else x)
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df_excel.to_excel(writer, index=False, sheet_name='교섭공고결과')
     return output.getvalue()
 
-# 6. 메인 UI
+# 6. 메인 UI 및 자동 확인 로직
 if not selected_regions:
-    st.info("💡 왼쪽 상단의 [ > ] 화살표(사이드바)를 열어 지역을 선택해주세요!")
+    st.info("💡 왼쪽 상단의 [ > ] 화살표를 눌러 지역을 선택해주세요!")
 
 col1, col2, col3 = st.columns([1,3,1])
 with col2:
@@ -204,22 +205,18 @@ with col2:
 
             status_placeholder.success(f"✅ 검사 완료! (총 {len(target_sites)}개)")
             df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
-            
-            # 결과 테이블 표시용 링크 변환
             df_display = df.copy()
             df_display['링크'] = df_display['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
             
-            # 엑셀 다운로드 버튼 배치
             st.download_button(
                 label="📥 검색 결과 엑셀로 내려받기",
                 data=to_excel(df_display),
                 file_name=f"교섭공고_결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx",
                 mime="application/vnd.ms-excel"
             )
-            
             st.write(df_display.to_html(escape=False), unsafe_allow_html=True)
 
-# 📢 직접 확인 리스트 (항상 노출)
+# 7. 직접 확인 리스트 (첫 화면 상시 노출)
 st.markdown("---")
 st.subheader(f"📢 직접 확인 리스트 ({len(manual_sites)}개 지역)")
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
