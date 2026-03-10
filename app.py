@@ -9,39 +9,68 @@ from io import BytesIO
 # 1. 페이지 설정
 st.set_page_config(page_title="교섭공고 알리미", page_icon="🔍", layout="wide", initial_sidebar_state="expanded")
 
-# 2. 디자인 (CSS)
+# 2. 강력한 중앙 정렬 CSS 적용
 st.markdown("""
     <style>
-        .header-container { text-align: center; margin-bottom: 10px; }
-        .main-title { font-size: 2rem; font-weight: bold; }
-        .sub-title { font-size: 1.2rem; color: #555; margin-bottom: 20px; }
-        
-        /* 수동 리스트 구역 디자인 */
-        .manual-box { 
-            background-color: #f8f9fa; 
-            border: 1px solid #dee2e6; 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin-bottom: 20px;
+        /* 전체 컨테이너 중앙 정렬 */
+        .block-container {
+            padding-top: 2rem;
+            max-width: 1000px !important;
+            margin: auto !important;
         }
         
-        /* 버튼 디자인 */
+        .header-container { text-align: center; margin-bottom: 30px; }
+        .main-title { font-size: 2.2rem; font-weight: bold; }
+        .sub-title { font-size: 1.2rem; color: #555; }
+        
+        /* 버튼 정중앙 및 크기 고정 */
+        div.stButton { display: flex; justify-content: center; margin: 30px 0; }
         div.stButton > button {
-            width: 100% !important; 
-            background-color: #007bff !important; 
-            color: white !important;
-            font-weight: bold !important;
-            height: 3rem !important;
+            width: 500px !important; height: 4rem !important;
+            font-size: 1.5rem !important; font-weight: bold !important;
+            background-color: #007bff !important; color: white !important;
+            border-radius: 12px !important; border: none !important;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
         }
+
+        /* 테이블 중앙 정렬 및 가독성 */
+        .result-table { margin: auto; border-collapse: collapse; width: 100%; text-align: center; border: 1px solid #ddd; }
+        .result-table th { background-color: #f8f9fa; padding: 12px; border: 1px solid #ddd; text-align: center !important; }
+        .result-table td { padding: 10px; border: 1px solid #ddd; text-align: center !important; font-size: 16px; }
         
-        /* 결과 테이블 */
-        .result-table { width: 100%; border-collapse: collapse; text-align: center; }
-        .result-table th, .result-table td { border: 1px solid #ddd; padding: 8px; }
-        .result-table th { background-color: #eee; }
+        /* 수동 리스트 박스 디자인 */
+        .manual-container {
+            margin-top: 50px;
+            padding: 25px;
+            background-color: #f1f3f5;
+            border-radius: 15px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+        .manual-title { font-size: 1.3rem; font-weight: bold; margin-bottom: 20px; color: #333; }
+        
+        /* 링크 정렬 */
+        .link-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            text-align: center;
+        }
+        .link-item a {
+            text-decoration: none;
+            color: #007bff;
+            font-weight: 500;
+        }
+        .link-item a:hover { text-decoration: underline; }
     </style>
+
+    <div class="header-container">
+        <div class="main-title">지자체 교섭요구공고 확인</div>
+        <div class="sub-title">(돌봄사업장 지역 공고 모니터링)</div>
+    </div>
 """, unsafe_allow_html=True)
 
-# 3. 데이터 (전체 리스트 포함)
+# 3. 데이터 설정 (기존 데이터 유지)
 sort_order = ["서울특별시", "부산광역시", "대구광역시", "울산광역시", "강원도", "전라북도", "경상북도", "경상남도", "충청남도", "충청북도"]
 raw_target_data = {
     "서울특별시": [
@@ -111,44 +140,30 @@ raw_target_data = {
 
 target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
 
-# 4. 분석 함수
+# 4. 분석 로직
 def check_site_stable(name, url):
-    headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
+    headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
     try:
-        response = requests.get(url, headers=headers, timeout=10, verify=False)
+        response = requests.get(url, headers=headers, timeout=12, verify=False)
         response.encoding = response.apparent_encoding 
         clean_text = re.sub(r'<[^>]*>', '', response.text)
         if "교섭" not in clean_text: return [name, url, "⚪ 결과 없음"]
-        return [name, url, "🟡 공고 확인됨"] # 간단하게 유지
+        return [name, url, "🟡 공고 확인됨"]
     except: return [name, url, "⚠️ 확인 불가"]
 
 # 5. 사이드바 지역 선택
-st.sidebar.header("📍 지역 선택")
+st.sidebar.header("📍 검색 지역 설정")
 selected_regions = []
 for region in sort_order:
     if st.sidebar.checkbox(f"{region}", key=f"sidebar_{region}"):
         selected_regions.append(region)
 
-# 6. 메인 화면
-st.markdown("<div class='header-container'><div class='main-title'>교섭공고 통합 알리미</div></div>", unsafe_allow_html=True)
+# 6. 메인 실행 (순서: 자동 검색 -> 수동 확인)
+status_placeholder = st.empty()
 
-# [수동 리스트 박스] - 선택한 지역의 링크를 바로 보여줌
-if selected_regions:
-    with st.expander("🔗 선택한 지역 게시판 바로가기 (수동 확인)", expanded=True):
-        cols = st.columns(4)
-        idx = 0
-        for reg in selected_regions:
-            for name, url in target_data[reg]:
-                with cols[idx % 4]:
-                    st.markdown(f"[{name}]({url})")
-                idx += 1
-else:
-    st.info("왼쪽 사이드바에서 지역을 선택하면 수동 링크가 나타납니다.")
-
-# [자동 검색 버튼]
-if st.button("💡 선택 지역 자동 검색 시작 (상태 확인)"):
+if st.button("🚀 선택 지역 자동 확인 시작"):
     if not selected_regions:
-        st.error("지역을 선택해주세요!")
+        st.warning("왼쪽 사이드바에서 지역을 먼저 선택해 주세요!")
     else:
         all_sites = []
         for reg in selected_regions: all_sites.extend(target_data[reg])
@@ -156,9 +171,29 @@ if st.button("💡 선택 지역 자동 검색 시작 (상태 확인)"):
         results = []
         bar = st.progress(0)
         for i, (name, url) in enumerate(all_sites):
+            status_placeholder.markdown(f"<p style='text-align:center;'>⏳ 확인 중: <b>{name}</b></p>", unsafe_allow_html=True)
             results.append(check_site_stable(name, url))
             bar.progress((i + 1) / len(all_sites))
         
-        st.success("검색 완료!")
-        df = pd.DataFrame(results, columns=["지자체", "링크", "상태"])
-        st.table(df) # 가장 깔끔한 기본 테이블로 출력
+        status_placeholder.markdown("<p style='text-align:center; color:green; font-weight:bold;'>✅ 자동 확인이 완료되었습니다!</p>", unsafe_allow_html=True)
+        
+        # 중앙 정렬된 결과 테이블 출력
+        table_html = "<table class='result-table'><thead><tr><th>지자체명</th><th>게시판</th><th>상태</th></tr></thead><tbody>"
+        for r in results:
+            table_html += f"<tr><td>{r[0]}</td><td><a href='{r[1]}' target='_blank'>이동</a></td><td>{r[2]}</td></tr>"
+        table_html += "</tbody></table>"
+        st.markdown(table_html, unsafe_allow_html=True)
+
+# 7. 수동 확인 섹션 (화면 하단으로 이동)
+if selected_regions:
+    st.markdown("<div class='manual-container'>", unsafe_allow_html=True)
+    st.markdown("<div class='manual-title'>🔗 선택 지역 게시판 바로가기 (수동)</div>", unsafe_allow_html=True)
+    st.markdown("<div class='link-grid'>", unsafe_allow_html=True)
+    
+    for reg in selected_regions:
+        for name, url in target_data[reg]:
+            st.markdown(f"<div class='link-item'><a href='{url}' target='_blank'>{name}</a></div>", unsafe_allow_html=True)
+            
+    st.markdown("</div></div>", unsafe_allow_html=True)
+else:
+    st.markdown("<p style='text-align:center; color:#888; margin-top:50px;'>사이드바에서 지역을 선택하면 수동 확인 리스트가 나타납니다.</p>", unsafe_allow_html=True)
