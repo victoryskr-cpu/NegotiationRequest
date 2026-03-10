@@ -14,20 +14,30 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. 스타일 설정 (모바일 최적화 포함)
+# 2. 스타일 설정
 st.markdown("""
     <style>
     .header-container { text-align: center; margin-top: -20px; margin-bottom: 20px; }
-    .main-title { font-size: 1.8rem; font-weight: bold; }
+    .main-title { font-size: 1.8rem; font-weight: bold; margin-bottom: 5px; }
+    .sub-title { font-size: 1.2rem; color: #444; font-weight: 500; } /* 글자 크기 키움 */
     .status-text { font-weight: bold; color: #ff4b4b; display: block; text-align: center; margin-bottom: 10px; }
     .stButton>button { width: 100%; border-radius: 5px; min-height: 3.5em; font-weight: bold; }
-    /* 직접 확인 리스트 제목 스타일 */
     .manual-title { font-size: 1.3rem; font-weight: bold; margin-bottom: 0px; }
     .manual-subtitle { font-size: 0.9rem; color: #666; display: block; margin-bottom: 10px; }
+    .guide-box { 
+        background-color: #f0f2f6; 
+        padding: 15px; 
+        border-radius: 10px; 
+        text-align: center; 
+        border: 1px dashed #ff4b4b;
+        margin-bottom: 20px;
+        font-weight: bold;
+        color: #ff4b4b;
+    }
     </style>
     <div class="header-container">
         <h1 class="main-title">지자체 교섭요구공고 확인</h1>
-        <p>(돌봄사업장 지역 공고 모니터링)</p>
+        <p class="sub-title">(돌봄사업장 지역 공고 모니터링)</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -158,7 +168,7 @@ for region in sort_order:
 target_sites = []
 for reg in selected_regions: target_sites.extend(target_data[reg])
 
-# 4. 판별 및 엑셀 함수
+# 4. 판별 및 엑셀 기능
 def check_site_stable(name, url):
     headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
     try:
@@ -188,7 +198,10 @@ def to_excel(df):
         df_excel.to_excel(writer, index=False, sheet_name='교섭공고결과')
     return output.getvalue()
 
-# 5. 메인 UI
+# 5. 메인 UI 및 안내 문구
+if not selected_regions:
+    st.markdown('<div class="guide-box">왼쪽 상단 [ > ] 화살표 눌러 지역 선택!</div>', unsafe_allow_html=True)
+
 col1, col2, col3 = st.columns([1,3,1])
 with col2:
     status_placeholder = st.empty()
@@ -210,7 +223,7 @@ with col2:
             st.download_button(label="📥 결과 엑셀 내려받기", data=to_excel(df), file_name=f"교섭결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx", mime="application/vnd.ms-excel")
             st.write(df_display.to_html(escape=False), unsafe_allow_html=True)
 
-# 6. 직접 확인 리스트 (요청하신 스타일 적용)
+# 6. 직접 확인 리스트
 st.markdown("---")
 st.markdown(f"""
     <div style="text-align: left;">
