@@ -65,22 +65,21 @@ target_sites = [
 #    ["경남_의령", "https://www.uiryeong.go.kr/board/list.uiryeong?boardId=BBS_0000070&menuCd=DOM_000000203003001001&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
 #    ["경남_창원", "https://www.changwon.go.kr/cwportal/10310/10438/10439.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
 #    ["경남_함안", "https://www.haman.go.kr/00960/00962.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
-    ["충청남도", "https://www.chungnam.go.kr/cnnet/board.do?mnu_cd=CNNMENU00148"],
+["충청남도청", "https://www.chungnam.go.kr/cnnet/board.do?mnu_cd=CNNMENU00148"],
     ["충남_천안", "https://www.cheonan.go.kr/cop/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000031"],
     ["충남_공주", "https://www.gongju.go.kr/cop/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000041"],
-    ["충남_논산", "https://www.nonsan.go.kr/cop/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000021&searchCnd=0&searchWrd=%EA%B5%90%EC%84%AD"],    
     ["충남_아산", "https://www.asan.go.kr/main/cms/board/gosi/list.do"],
     ["충남_서산", "https://www.seosan.go.kr/common/bbs/selectBbsList.do?bbsId=BBS_0000000000000001"],
+    ["충남_논산", "https://www.nonsan.go.kr/cop/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000021"],
     ["충남_당진", "https://www.dangjin.go.kr/cop/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000051"],
-    ["경상북도", "https://www.gb.go.kr/Main/page.do?bdName=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&mnu_uid=6789"],
+    ["경상북도청", "https://www.gb.go.kr/Main/page.do?bdName=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&mnu_uid=6789"],
     ["경북_포항", "https://www.pohang.go.kr/pohang/saeol/gosi/list.do?mid=0202010100"],
     ["경북_경주", "https://www.gyeongju.go.kr/open_content/ko/page.do?mnu_uid=2340"],
     ["경북_김천", "https://www.gc.go.kr/portal/saeol/gosi/list.do?mId=0202010000"],
     ["경북_안동", "https://www.andong.go.kr/portal/saeol/gosi/list.do?mId=0401010000"],
     ["경북_구미", "https://www.gumi.go.kr/portal/saeol/gosi/list.do?mId=0401010000"],
     ["경북_경산", "https://www.gbgs.go.kr/programs/saeolGosi/gosiList.do"],
-    ["경북_칠곡", "https://www.chilgok.go.kr/portal/saeol/gosi/list.do?mId=0401010000"],
-]
+    ["경북_칠곡", "https://www.chilgok.go.kr/portal/saeol/gosi/list.do?mId=0401010000"],]
 
 # 2. 직접 확인 필요 리스트 (분류 완료)
 manual_sites = [
@@ -181,6 +180,7 @@ if st.button("🚀 공고 확인 시작"):
     m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
     m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
     st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
+
 
 
 
