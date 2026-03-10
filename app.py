@@ -236,8 +236,10 @@ def to_excel(df):
 col1, col2, col3 = st.columns([1, 2, 1]) # 비율을 조정하여 버튼 크기를 적절하게 설정
 with col2:
     status_placeholder = st.empty()
+
     if st.button("선택 지역 자동 확인 시작"):
-    if not target_sites: 
+    # 여기서부터는 모두 한 단계(Space 4칸 또는 Tab 1번) 들여쓰기가 되어야 합니다.
+      if not target_sites: 
         st.warning("지역을 먼저 선택해주세요.")
     else:
         results = []
