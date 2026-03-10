@@ -153,7 +153,7 @@ manual_data = [
     ["충남_공주", "https://www.gongju.go.kr/prog/saeolGosi/GOSI_01/sub04_03_01/list.do"],
     ["충남_당진", "https://www.dangjin.go.kr/kor/sub03_02_01_01.do"],
     ["충남_천안", "https://www.cheonan.go.kr/kor/sub02_02_01.do"],
-    ["충청북도", "https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422&searchKrwd=%EA%B5%90%EC%84%AD"],
+#    ["충청북도", "https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422&searchKrwd=%EA%B5%90%EC%84%AD"],
     ["충북_단양", "https://www.danyang.go.kr/dy21/976"],
     ["충북_영동", "https://www.yd21.go.kr/kr/html/sub02/020103.html?mode=L"],
     ["충북_증평", "http://www.jp.go.kr/kor/sub03_01_03.do"],
@@ -247,6 +247,7 @@ st.markdown(f"""
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
 st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
