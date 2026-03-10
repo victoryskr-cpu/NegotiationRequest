@@ -16,7 +16,7 @@ st.set_page_config(
 st.markdown("""
     <style>
     /* 제목 및 텍스트 레이아웃 */
-    .header-container { text-align: center; margin-top: -20px; margin-bottom: 20px; }
+    .header-container { text-align: center; margin-top: -20px; margin-bottom: 10px; }
     .main-title { font-size: 1.8rem; font-weight: bold; margin-bottom: 5px; }
     .sub-title { font-size: 1.5rem; color: #444; font-weight: 500; }
     .status-text { font-weight: bold; color: #ff4b4b; display: block; text-align: center; margin-bottom: 10px; }
@@ -259,6 +259,7 @@ st.markdown(f"""
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
 st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
