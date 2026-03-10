@@ -225,50 +225,37 @@ def to_excel(df):
         df_excel.to_excel(writer, index=False, sheet_name='교섭공고결과')
     return output.getvalue()
 
-if not selected_regions:
-    st.markdown('<div class="guide-box">왼쪽 상단 [ > ] 화살표 눌러 지역 선택!</div>', unsafe_allow_html=True)
-
-col1, col2, col3 = st.columns([1,3,1])
+col1, col2, col3 = st.columns([1, 2, 1]) # 비율을 조정하여 버튼 크기를 적절하게 설정
 with col2:
     status_placeholder = st.empty()
+    # 버튼 실행 로직
     if st.button("선택 지역 자동 확인 시작"):
-        if not target_sites: st.warning("지역을 먼저 선택해주세요.")
+        if not target_sites: 
+            st.warning("지역을 먼저 선택해주세요.")
         else:
             results = []
             bar = st.progress(0)
             for i, (name, url) in enumerate(target_sites):
                 percent = int(((i + 1) / len(target_sites)) * 100)
-                status_placeholder.markdown(f"<span class='status-text'>⏳ [{percent}%] 확인 중: {name}</span>", unsafe_allow_html=True)
+                # 확인 중 메시지 출력
+                status_placeholder.markdown(f"<div style='text-align:center;' class='status-text'>⏳ [{percent}%] 확인 중: {name}</div>", unsafe_allow_html=True)
                 results.append(check_site_stable(name, url))
                 bar.progress((i + 1) / len(target_sites))
                 time.sleep(0.1)
+            
+            # 완료 메시지
             status_placeholder.success(f"✅ 검사 완료! (총 {len(target_sites)}개)")
+            
+            # 결과 표 출력 및 엑셀 다운로드 버튼
             df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
             df_display = df.copy()
-            df_display['링크'] = df_display['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
-            st.download_button(label="📥 결과 엑셀 내려받기", data=to_excel(df), file_name=f"교섭결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx", mime="application/vnd.ms-excel")
+            df_display['링크'] = df_display['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
+            
+            st.download_button(
+                label="📥 결과 엑셀 내려받기", 
+                data=to_excel(df), 
+                file_name=f"교섭결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx", 
+                mime="application/vnd.ms-excel",
+                use_container_width=True # 다운로드 버튼도 가로 폭 맞춤
+            )
             st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
-
-st.markdown("---")
-st.markdown(f"""
-    <div style="text-align: left;">
-        <p class="manual-title">직접 확인 리스트</p>
-        <p class="manual-subtitle">({len(manual_sites)}개 지역)</p>
-    </div>
-""", unsafe_allow_html=True)
-
-m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
-m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
-st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
-
-
-
-
-
-
-
-
-
-
-
-
