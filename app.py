@@ -15,49 +15,50 @@ st.set_page_config(
 
 st.markdown("""
     <style>
+    /* 제목 및 텍스트 레이아웃 */
     .header-container { text-align: center; margin-top: -20px; margin-bottom: 20px; }
     .main-title { font-size: 1.8rem; font-weight: bold; margin-bottom: 5px; }
     .sub-title { font-size: 1.2rem; color: #444; font-weight: 500; }
     .status-text { font-weight: bold; color: #ff4b4b; display: block; text-align: center; margin-bottom: 10px; }
-    .stButton>button { width: 100%; border-radius: 5px; min-height: 3.5em; font-weight: bold; }
-    .manual-title { font-size: 1.3rem; font-weight: bold; margin-bottom: 0px; }
-    .manual-subtitle { font-size: 0.9rem; color: #666; display: block; margin-bottom: 10px; }
+    
+    /* 버튼 중앙 정렬 및 파란색 강조 스타일 */
+    .stButton {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+    }
+    
+    .stButton>button {
+        width: 320px !important; /* 버튼 너비 */
+        background-color: #007BFF !important; /* 선명한 파란색 */
+        color: white !important; /* 글자색 흰색 */
+        border-radius: 12px;
+        min-height: 3.8em;
+        font-weight: 900 !important; /* 아주 굵게 */
+        font-size: 1.15rem !important; /* 글자 크기 키움 */
+        border: none;
+        box-shadow: 0px 4px 15px rgba(0, 123, 255, 0.3); /* 파란색 그림자 효과 */
+        transition: all 0.3s ease;
+    }
+
+    /* 마우스 올렸을 때 효과 */
+    .stButton>button:hover {
+        background-color: #0056b3 !important;
+        transform: translateY(-2px); /* 살짝 위로 뜨는 효과 */
+        box-shadow: 0px 6px 20px rgba(0, 123, 255, 0.4);
+    }
+
+    /* 안내 박스 스타일 */
     .guide-box { 
         background-color: #f0f2f6; padding: 15px; border-radius: 10px; text-align: center; 
         border: 1px dashed #ff4b4b; margin-bottom: 20px; font-weight: bold; color: #ff4b4b;
     }
-    table { width: 100%; border-collapse: collapse; }
-    th { text-align: center !important; background-color: #f8f9fa; }
-    td { text-align: center !important; vertical-align: middle; }
     </style>
+    
     <div class="header-container">
         <h1 class="main-title">지자체 교섭요구공고 확인</h1>
         <p class="sub-title">(돌봄사업장 지역 공고 모니터링)</p>
     </div>
-    # /* 버튼 가운데 정렬 및 스타일 변경 */
-    .stButton {
-        display: flex;
-        justify-content: center;
-    }
-    
-    .stButton>button {
-        width: 300px !important; /* 버튼 너비 적절히 조절 */
-        background-color: #007BFF !important; /* 눈에 띄는 파란색 */
-        color: white !important; /* 글자색 흰색 */
-        border-radius: 10px;
-        min-height: 3.5em;
-        font-weight: 900 !important; /* 아주 굵게 */
-        font-size: 1.1rem !important;
-        border: none;
-        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* 약간의 그림자 효과 */
-        transition: 0.3s;
-    }
-
-    .stButton>button:hover {
-        background-color: #0056b3 !important; /* 마우스 올렸을 때 더 진하게 */
-        transform: scale(1.02);
-    }
-    </style>
 """, unsafe_allow_html=True)
 
 sort_order = ["서울특별시", "부산광역시", "대구광역시", "울산광역시", "강원도", "전라북도", "경상북도", "경상남도", "충청남도", "충청북도"]
@@ -258,5 +259,6 @@ st.markdown(f"""
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
 st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
