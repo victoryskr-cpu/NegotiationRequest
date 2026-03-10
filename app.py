@@ -248,7 +248,7 @@ with col2:
             bar.progress((i + 1) / len(target_sites))
             time.sleep(0.1)
         
-        status_placeholder.success(f"✅ 검사 완료! (총 {len(target_sites)}개)")
+        status_placeholder.success(f"✅ 확인 완료! (총 {len(target_sites)}개)")
         
         # 결과 및 다운로드 처리
         df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
@@ -263,4 +263,3 @@ with col2:
             use_container_width=False # 고정 너비 사용을 위해 False
         )
         st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
-
