@@ -34,6 +34,30 @@ st.markdown("""
         <h1 class="main-title">지자체 교섭요구공고 확인</h1>
         <p class="sub-title">(돌봄사업장 지역 공고 모니터링)</p>
     </div>
+    /* 버튼 가운데 정렬 및 스타일 변경 */
+    .stButton {
+        display: flex;
+        justify-content: center;
+    }
+    
+    .stButton>button {
+        width: 300px !important; /* 버튼 너비 적절히 조절 */
+        background-color: #007BFF !important; /* 눈에 띄는 파란색 */
+        color: white !important; /* 글자색 흰색 */
+        border-radius: 10px;
+        min-height: 3.5em;
+        font-weight: 900 !important; /* 아주 굵게 */
+        font-size: 1.1rem !important;
+        border: none;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* 약간의 그림자 효과 */
+        transition: 0.3s;
+    }
+
+    .stButton>button:hover {
+        background-color: #0056b3 !important; /* 마우스 올렸을 때 더 진하게 */
+        transform: scale(1.02);
+    }
+    </style>
 """, unsafe_allow_html=True)
 
 sort_order = ["서울특별시", "부산광역시", "대구광역시", "울산광역시", "강원도", "전라북도", "경상북도", "경상남도", "충청남도", "충청북도"]
@@ -205,7 +229,7 @@ if not selected_regions:
 col1, col2, col3 = st.columns([1,3,1])
 with col2:
     status_placeholder = st.empty()
-    if st.button("🚀 선택 지역 자동 확인 시작"):
+    if st.button("선택 지역 자동 확인 시작"):
         if not target_sites: st.warning("지역을 먼저 선택해주세요.")
         else:
             results = []
@@ -234,3 +258,4 @@ st.markdown(f"""
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
 st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
