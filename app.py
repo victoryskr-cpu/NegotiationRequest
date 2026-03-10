@@ -34,7 +34,7 @@ st.markdown("""
         <h1 class="main-title">지자체 교섭요구공고 확인</h1>
         <p class="sub-title">(돌봄사업장 지역 공고 모니터링)</p>
     </div>
-    /* 버튼 가운데 정렬 및 스타일 변경 */
+    # /* 버튼 가운데 정렬 및 스타일 변경 */
     .stButton {
         display: flex;
         justify-content: center;
@@ -258,4 +258,5 @@ st.markdown(f"""
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
 st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
