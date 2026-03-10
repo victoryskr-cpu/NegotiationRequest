@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-t.markdown(""
+st.markdown("""
     <style>
         .header-container {
             text-align: center;
@@ -37,7 +37,7 @@ t.markdown(""
             color: #ff4b4b;
             margin-bottom: 25px;
         }
-        /* 버튼 스타일 최적화: 크고 선명한 파란색 */
+        /* 버튼 스타일 최적화 */
         div.stButton > button {
             width: 100%;
             height: 3.5rem;
@@ -62,7 +62,6 @@ t.markdown(""
         <div class="status-text">왼쪽 상단 [ > ] 화살표 눌러 지역 선택!</div>
     </div>
 """, unsafe_allow_html=True)
-
 sort_order = ["서울특별시", "부산광역시", "대구광역시", "울산광역시", "강원도", "전라북도", "경상북도", "경상남도", "충청남도", "충청북도"]
 
 raw_target_data = {
@@ -261,6 +260,7 @@ st.markdown(f"""
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
 st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
