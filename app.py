@@ -411,7 +411,7 @@ def check_site_stable(name: str, url: str):
             "지자체명": name,
             "링크": url,
             "상태": status,
-            "감지일자": detected_date,
+            "게시일자": detected_date,
             "감지제목": detected_title
         }
 
@@ -420,7 +420,7 @@ def check_site_stable(name: str, url: str):
             "지자체명": name,
             "링크": url,
             "상태": "⚠️ 타임아웃",
-            "감지일자": "",
+            "게시일자": "",
             "감지제목": ""
         }
 
@@ -429,7 +429,7 @@ def check_site_stable(name: str, url: str):
             "지자체명": name,
             "링크": url,
             "상태": "⚠️ 접속 오류",
-            "감지일자": "",
+            "게시일자": "",
             "감지제목": ""
         }
 
@@ -438,7 +438,7 @@ def check_site_stable(name: str, url: str):
             "지자체명": name,
             "링크": url,
             "상태": "⚠️ 요청 실패",
-            "감지일자": "",
+            "게시일자": "",
             "감지제목": ""
         }
 
@@ -447,7 +447,7 @@ def check_site_stable(name: str, url: str):
             "지자체명": name,
             "링크": url,
             "상태": "⚠️ 파싱 오류",
-            "감지일자": "",
+            "게시일자": "",
             "감지제목": ""
         }
 
@@ -493,7 +493,7 @@ def to_excel(df: pd.DataFrame):
             "지자체명": 18,
             "링크": 18,
             "상태": 16,
-            "감지일자": 14,
+            "게시일자": 14,
             "감지제목": 70
         }
 
@@ -596,7 +596,7 @@ if run_clicked:
                         "지자체명": name,
                         "링크": "",
                         "상태": "⚠️ 실행 오류",
-                        "감지일자": "",
+                        "게시일자": "",
                         "감지제목": ""
                     }
 
@@ -673,3 +673,4 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
