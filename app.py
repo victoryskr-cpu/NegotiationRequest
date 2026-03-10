@@ -13,41 +13,52 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.markdown("""
+t.markdown("""
     <style>
-        /* 전체 컨테이너 정렬 */
         .header-container {
             text-align: center;
             margin-bottom: 20px;
         }
-        /* 메인 제목: 지자체 교섭요구공고 확인 */
         .main-title {
             font-size: 2.2rem;
             font-weight: bold;
             margin-bottom: 0px;
-            padding-bottom: 0px;
         }
-        /* 부제: (돌봄사업장 지역 공고 모니터링) - 34px 설정 */
         .sub-title {
             font-size: 34px;
             font-weight: bold;
             color: #555;
-            margin-top: 5px;   /* 제목과의 간격 */
+            margin-top: 5px;
             margin-bottom: 30px;
         }
-        /* 안내 문구: 왼쪽 상단 화살표... */
         .status-text {
             font-size: 18px;
             font-weight: bold;
             color: #ff4b4b;
-            margin-top: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        /* 버튼 스타일 최적화: 크고 선명한 파란색 */
+        div.stButton > button {
+            width: 100%;
+            height: 3.5rem;
+            font-size: 1.5rem !important;
+            font-weight: bold !important;
+            background-color: #007bff !important;
+            color: white !important;
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0px 4px 10px rgba(0, 123, 255, 0.3);
+            transition: all 0.3s;
+        }
+        div.stButton > button:hover {
+            background-color: #0056b3 !important;
+            transform: translateY(-2px);
         }
     </style>
 
     <div class="header-container">
-        <div class="main-title">지자체 교섭요구공고 확인</div>
-        <div class="sub-title">(돌봄 지자체 교섭요구 공고 모니터링)</div>
+        <div class="main-title">🏛️ 지자체 교섭요구공고 확인</div>
+        <div class="sub-title">(돌봄사업장 지역 공고 모니터링)</div>
         <div class="status-text">왼쪽 상단 [ > ] 화살표 눌러 지역 선택!</div>
     </div>
 """, unsafe_allow_html=True)
@@ -250,6 +261,7 @@ st.markdown(f"""
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
 st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
