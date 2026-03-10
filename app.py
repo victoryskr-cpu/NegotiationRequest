@@ -471,8 +471,8 @@ def check_gyeongnam(name: str, url: str):
 
 def check_gyeonggi(name: str, url: str):
     """
-    경기도 게시판 검색 파라미터 직접 호출
-    정확 payload를 아직 확정하지 못해 GET 검색 + fallback 구조
+    경기도 고시공고 전용 검색
+    실제 확인한 파라미터 기반
     """
     session = create_session()
 
@@ -480,25 +480,21 @@ def check_gyeonggi(name: str, url: str):
         search_url = "https://www.gg.go.kr/bbs/board.do"
         params = {
             "bsIdx": "469",
+            "bcIdx": "0",
             "menuId": "1547",
+            "isManager": "false",
+            "isCharge": "false",
             "keyfield": "SUBJECTANDREMARK",
-            "keyword": "교섭"
+            "keyword": "교섭",
+            "offset": "0",
+            "limit": "10"
         }
 
         response = session.get(search_url, params=params, timeout=15)
         response.raise_for_status()
         response.encoding = response.apparent_encoding or response.encoding
 
-        result = analyze_response_text(name, url, response.text)
-
-        # 결과가 너무 약하면 원래 URL로 한 번 fallback
-        if result["상태"] == "⚪ 결과 없음":
-            fallback = session.get(url, timeout=15)
-            fallback.raise_for_status()
-            fallback.encoding = fallback.apparent_encoding or fallback.encoding
-            result = analyze_response_text(name, url, fallback.text)
-
-        return result
+        return analyze_response_text(name, url, response.text)
 
     except requests.exceptions.Timeout:
         return make_result(name, url, "⚠️ 타임아웃")
@@ -508,7 +504,7 @@ def check_gyeonggi(name: str, url: str):
         return make_result(name, url, "⚠️ 요청 실패")
     except Exception:
         return make_result(name, url, "⚠️ 파싱 오류")
-
+        
 def check_ulsan_metropolitan(name: str, url: str):
     """
     울산광역시 고시공고 전용 POST 검색
@@ -791,4 +787,5 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
