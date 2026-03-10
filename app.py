@@ -25,7 +25,7 @@ st.markdown("""
             margin-bottom: 0px;
         }
         .sub-title {
-            font-size: 34px;
+            font-size: 24px; /* 기존 34px에서 약 2/3 수준인 24px로 조정 */
             font-weight: bold;
             color: #555;
             margin-top: 5px;
@@ -35,11 +35,18 @@ st.markdown("""
             font-size: 18px;
             font-weight: bold;
             color: #ff4b4b;
-            margin-bottom: 25px;
+            margin-bottom: 5px;
         }
-        /* 버튼 스타일 최적화 */
+        
+        /* 버튼을 감싸는 div가 중앙에 오도록 하고, 버튼 자체를 중앙 정렬 */
+        div.stButton {
+            text-align: center;
+            display: flex;
+            justify-content: center;
+        }
+        
         div.stButton > button {
-            width: 100%;
+            width: 400px; /* 버튼 너비를 고정하여 중앙 배치를 명확히 함 */
             height: 3.5rem;
             font-size: 1.5rem !important;
             font-weight: bold !important;
@@ -57,11 +64,12 @@ st.markdown("""
     </style>
 
     <div class="header-container">
-        <div class="main-title">지자체 교섭요구공고 확인</div>
+        <div class="main-title">🏛️ 지자체 교섭요구공고 확인</div>
         <div class="sub-title">(돌봄사업장 지역 공고 모니터링)</div>
         <div class="status-text">왼쪽 상단 [ > ] 화살표 눌러 지역 선택!</div>
     </div>
 """, unsafe_allow_html=True)
+
 sort_order = ["서울특별시", "부산광역시", "대구광역시", "울산광역시", "강원도", "전라북도", "경상북도", "경상남도", "충청남도", "충청북도"]
 
 raw_target_data = {
@@ -228,35 +236,30 @@ def to_excel(df):
 col1, col2, col3 = st.columns([1, 2, 1]) # 비율을 조정하여 버튼 크기를 적절하게 설정
 with col2:
     status_placeholder = st.empty()
-    # 버튼 실행 로직
     if st.button("선택 지역 자동 확인 시작"):
-        if not target_sites: 
-            st.warning("지역을 먼저 선택해주세요.")
-        else:
-            results = []
-            bar = st.progress(0)
-            for i, (name, url) in enumerate(target_sites):
-                percent = int(((i + 1) / len(target_sites)) * 100)
-                # 확인 중 메시지 출력
-                status_placeholder.markdown(f"<div style='text-align:center;' class='status-text'>⏳ [{percent}%] 확인 중: {name}</div>", unsafe_allow_html=True)
-                results.append(check_site_stable(name, url))
-                bar.progress((i + 1) / len(target_sites))
-                time.sleep(0.1)
-            
-            # 완료 메시지
-            status_placeholder.success(f"✅ 검사 완료! (총 {len(target_sites)}개)")
-            
-            # 결과 표 출력 및 엑셀 다운로드 버튼
-            df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
-            df_display = df.copy()
-            df_display['링크'] = df_display['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
-            
-            st.download_button(
-                label="📥 결과 엑셀 내려받기", 
-                data=to_excel(df), 
-                file_name=f"교섭결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx", 
-                mime="application/vnd.ms-excel",
-                use_container_width=True # 다운로드 버튼도 가로 폭 맞춤
-            )
-            st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
-
+    if not target_sites: 
+        st.warning("지역을 먼저 선택해주세요.")
+    else:
+        results = []
+        bar = st.progress(0)
+        for i, (name, url) in enumerate(target_sites):
+            percent = int(((i + 1) / len(target_sites)) * 100)
+            status_placeholder.markdown(f"<div style='text-align:center;' class='status-text'>⏳ [{percent}%] 확인 중: {name}</div>", unsafe_allow_html=True)
+            results.append(check_site_stable(name, url))
+            bar.progress((i + 1) / len(target_sites))
+            time.sleep(0.1)
+        
+        status_placeholder.success(f"✅ 검사 완료! (총 {len(target_sites)}개)")
+        
+        # 결과 출력 및 엑셀 다운로드
+        df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
+        df_display = df.copy()
+        df_display['링크'] = df_display['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
+        
+        st.download_button(
+            label="📥 결과 엑셀 내려받기", 
+            data=to_excel(df), 
+            file_name=f"교섭결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx", 
+            mime="application/vnd.ms-excel"
+        )
+        st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
