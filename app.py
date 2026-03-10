@@ -552,7 +552,7 @@ def check_gyeonggi(name: str, url: str):
             for value in item.values():
                 if isinstance(value, str) and "교섭" in value:
                     date = extract_date_from_item(item)
-                    )
+                    
                     return make_result(name, url, "🟡 기존 공고", date, value[:120])
 
         return make_result(name, url, "⚪ 결과 없음")
@@ -848,6 +848,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
