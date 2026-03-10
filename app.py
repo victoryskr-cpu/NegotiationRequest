@@ -534,11 +534,9 @@ if run_clicked:
 
         st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
 
+
 # -------------------------------------------------
-# 직접 확인 리스트
-# -------------------------------------------------
-# -------------------------------------------------
-# 직접 확인 리스트
+# 직접 확인 리스트 (지역별 접기)
 # -------------------------------------------------
 st.markdown("---")
 st.markdown(f"""
@@ -548,6 +546,32 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
-m_df["링크"] = m_df["링크"].apply(lambda x: make_clickable_link(x))
-st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+manual_grouped = group_manual_sites(manual_sites)
+
+manual_region_order = [
+    "보건복지부", "서울", "부산", "대구", "울산",
+    "경기", "강원", "전북", "경북", "경남", "충남", "충북"
+]
+
+displayed_regions = set()
+
+for region in manual_region_order:
+    if region in manual_grouped:
+        displayed_regions.add(region)
+        sites = manual_grouped[region]
+
+        with st.expander(f"{region} ({len(sites)})", expanded=False):
+            region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
+            region_df["링크"] = region_df["링크"].apply(
+                lambda x: make_clickable_link(x)
+            )
+            st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
+for region, sites in manual_grouped.items():
+    if region not in displayed_regions:
+        with st.expander(f"{region} ({len(sites)})", expanded=False):
+            region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
+            region_df["링크"] = region_df["링크"].apply(
+                lambda x: make_clickable_link(x)
+            )
+            st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
