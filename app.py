@@ -471,13 +471,13 @@ def check_gyeongnam(name: str, url: str):
 
 def check_gyeonggi(name: str, url: str):
     """
-    경기도 고시공고 전용 검색
-    실제 확인한 파라미터 기반 + 전용 HTML 파서
+    경기도 교섭공고 검색 (AJAX API 사용)
     """
     session = create_session()
 
     try:
-        target_url = "https://www.gg.go.kr/bbs/board.do"
+        api_url = "https://www.gg.go.kr/ajax/board/getList.do"
+
         payload = {
             "bsIdx": "469",
             "bcIdx": "0",
@@ -490,45 +490,39 @@ def check_gyeonggi(name: str, url: str):
             "limit": "10"
         }
 
-        # 경기도는 브라우저처럼 보이도록 referer를 같이 주는 편이 안전
         headers = {
             "Referer": "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547",
-            "Origin": "https://www.gg.go.kr"
+            "X-Requested-With": "XMLHttpRequest"
         }
 
-        # 1차: POST
-        response = session.post(target_url, data=payload, headers=headers, timeout=20)
+        response = session.post(api_url, data=payload, headers=headers, timeout=20)
         response.raise_for_status()
-        response.encoding = response.apparent_encoding or response.encoding
 
-        result = parse_gyeonggi_html(name, url, response.text)
+        data = response.json()
 
-        if result["상태"] != "⚪ 결과 없음":
-            return result
+        items = data.get("list", [])
 
-        # 2차: GET도 시도
-        response = session.get(target_url, params=payload, headers=headers, timeout=20)
-        response.raise_for_status()
-        response.encoding = response.apparent_encoding or response.encoding
+        if not items:
+            return make_result(name, url, "⚪ 결과 없음")
 
-        result = parse_gyeonggi_html(name, url, response.text)
+        title = ""
+        date = ""
 
-        if result["상태"] != "⚪ 결과 없음":
-            return result
+        for item in items:
+            subject = item.get("subject", "")
+            if "교섭" in subject:
+                title = subject
+                date = item.get("regDt", "")
+                break
 
-        # 3차: 원래 URL fallback
-        response = session.get(url, timeout=20, headers=headers)
-        response.raise_for_status()
-        response.encoding = response.apparent_encoding or response.encoding
+        if not title:
+            title = items[0].get("subject", "")
 
-        return parse_gyeonggi_html(name, url, response.text)
+        return make_result(name, url, "🟡 기존 공고", date, title)
 
     except requests.exceptions.Timeout:
         return make_result(name, url, "⚠️ 타임아웃")
-    except requests.exceptions.HTTPError:
-        return make_result(name, url, "⚠️ 접속 오류")
-    except requests.exceptions.RequestException:
-        return make_result(name, url, "⚠️ 요청 실패")
+
     except Exception:
         return make_result(name, url, "⚠️ 파싱 오류")
         
@@ -814,6 +808,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
