@@ -57,7 +57,7 @@ st.markdown("""
     </style>
 
     <div class="header-container">
-        <div class="main-title">🏛️ 지자체 교섭요구공고 확인</div>
+        <div class="main-title">지자체 교섭요구공고 확인</div>
         <div class="sub-title">(돌봄사업장 지역 공고 모니터링)</div>
         <div class="status-text">왼쪽 상단 [ > ] 화살표 눌러 지역 선택!</div>
     </div>
@@ -259,3 +259,4 @@ with col2:
                 use_container_width=True # 다운로드 버튼도 가로 폭 맞춤
             )
             st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
+
