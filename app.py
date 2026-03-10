@@ -64,27 +64,25 @@ target_sites = [
 #    ["대구_동구", "https://www.dong.daegu.kr/portal/saeol/gosi/list.do?mid=0201020000"],
 #    ["대구_달서구", "https://www.dalseo.daegu.kr/index.do?menu_id=10000104"],
 #    ["대구_중구", "https://www.jung.daegu.kr/new/pages/administration/page.html?mc=0159"],
-    ["경기도", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547#page=1#keyfield=SUBJECTANDREMARK#keyword=%EA%B5%90%EC%84%AD"],
-    ["경기_구리", "https://www.guri.go.kr/www/selectGosiNttList.do?key=387&searchGosiSe=01%2C04%2C06&searchDeptNm=&searchCnd=ALL&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["경기_양주", "https://www.yangju.go.kr/www/selectEminwonList.do?pageUnit=10&key=4075&ofr_pageSize=10&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["경기_양평", "https://www.yp21.go.kr/www/selectBbsNttList.do?key=1119&bbsNo=5&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["경기_포천", "https://www.pocheon.go.kr/www/selectEminwonList.do?key=12563&notAncmtSeCode=01&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD&_csrfToken_pcg=9987888e-2dad-438c-8f9d-dc3ad5cfec63"],
-    ["충북_제천", "https://www.jecheon.go.kr/www/selectBbsNttList.do?key=5233&bbsNo=18&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["충북_보은", "https://www.boeun.go.kr/www/selectBbsNttList.do?key=194&bbsNo=66&searchCtgry=&integrDeptCode=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["충북_옥천", "https://www.oc.go.kr/www/selectBbsNttList.do?key=236&bbsNo=40&searchCtgry=&integrDeptCode=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["충북_진천", "https://www.jincheon.go.kr/home/sub.do?menukey=235"],
-    ["충북_괴산", "https://www.goesan.go.kr/www/contents.do?key=1439"],
-    ["충북_음성", "https://www.eumseong.go.kr/www/selectEminwonList.do?pageUnit=10&ofr_pageSize=10&key=352&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["강원특별자치도", "https://state.gwd.go.kr/portal/bulletin/notification?pageIndex=1&recordCountPerPage=15&mode=&firstYN=N&articleSeq=0&searchFromDate=2021-03-09&searchToDate=2026-03-09&searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
-#    ["강원_춘천", "https://www.chuncheon.go.kr/cityhall/administrative-info/notice-info/notice-announcement/?pageIndex=1&searchCnd=SJ&searchWrd=%EA%B5%90%EC%84%AD"],
-#    ["전북특별자치도", "https://www.jeonbuk.go.kr/board/list.jeonbuk?menuCd=DOM_000000102002005000&boardId=BBS_0000129&listCel=1&categoryCode1=&categoryCode2=&searchType=DATA_TITLE&listRow=10&keyword=%EA%B5%90%EC%84%AD"],
-#    ["전북_군산", "https://eminwon.gunsan.go.kr/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do"],
-#    ["전북_전주", "https://www.jeonju.go.kr/planweb/board/list.9is?boardUid=9be517a7914528ce01930aa3ddc26cf0&contentUid=ff8080818990c349018b041a879f395a&rowCount=10&searchType=dataTitle&keyword=%EA%B5%90%EC%84%AD"],
-#    ["경상남도", "https://www.gne.go.kr/user/bbs/BD_selectBbsList.do?csrfToken=84be7b4baea8a5da52e79f1b829dafd59cf7c68c304d971ad1d8676dbbc89021&q_rowPerPage=10&q_currPage=1&q_sortName=&q_sortOrder=&q_bbsSn=1238&q_bbsDocNo=&q_menu=&q_ctgryCd=&q_searchKeyTy=ttl___1002&q_searchVal=%EA%B5%90%EC%84%AD"],
-#    ["경남_김해", "https://www.gimhae.go.kr/03360/00023/00029.web?cpage=1&deptCode=&stype=title&sstring=%EA%B5%90%EC%84%AD"],
-#    ["경남_의령", "https://www.uiryeong.go.kr/board/list.uiryeong?orderBy=&boardId=BBS_0000070&searchStartDt=&searchEndDt=&startPage=1&menuCd=DOM_000000203003001001&contentsSid=201&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
-#    ["경남_창원", "https://www.changwon.go.kr/cwportal/10310/10438/10439.web?cpage=1&pbsDivision=&stype=title&sstring=%EA%B5%90%EC%84%AD&upunit=10"],
-#    ["경남_함안", "https://www.haman.go.kr/00960/00962.web?cpage=1&gubun=present&stype=title&sstring=%EA%B5%90%EC%84%AD"],
+#    ["경기_양주", "https://www.yangju.go.kr/www/selectEminwonList.do?pageUnit=10&key=4075&ofr_pageSize=10&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
+#    ["경기_양평", "https://www.yp21.go.kr/www/selectBbsNttList.do?key=1119&bbsNo=5&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+#    ["경기_포천", "https://www.pocheon.go.kr/www/selectEminwonList.do?key=12563&notAncmtSeCode=01&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD&_csrfToken_pcg=9987888e-2dad-438c-8f9d-dc3ad5cfec63"],
+#    ["충북_제천", "https://www.jecheon.go.kr/www/selectBbsNttList.do?key=5233&bbsNo=18&integrDeptCode=&searchCtgry=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+#    ["충북_보은", "https://www.boeun.go.kr/www/selectBbsNttList.do?key=194&bbsNo=66&searchCtgry=&integrDeptCode=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+#    ["충북_옥천", "https://www.oc.go.kr/www/selectBbsNttList.do?key=236&bbsNo=40&searchCtgry=&integrDeptCode=&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+#    ["충북_진천", "https://www.jincheon.go.kr/home/sub.do?menukey=235"],
+#    ["충북_괴산", "https://www.goesan.go.kr/www/contents.do?key=1439"],
+#    ["충북_음성", "https://www.eumseong.go.kr/www/selectEminwonList.do?pageUnit=10&ofr_pageSize=10&key=352&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["강원특별자치도", "https://state.gwd.go.kr/portal/bulletin/notification?pageIndex=1&recordCountPerPage=15&mode=&firstYN=N&articleSeq=0&searchFromDate=2021-03-09&searchToDate=2026-03-09&searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
+    ["강원_춘천", "https://www.chuncheon.go.kr/cityhall/administrative-info/notice-info/notice-announcement/?pageIndex=1&searchCnd=SJ&searchWrd=%EA%B5%90%EC%84%AD"],
+    ["전북특별자치도", "https://www.jeonbuk.go.kr/board/list.jeonbuk?menuCd=DOM_000000102002005000&boardId=BBS_0000129&listCel=1&categoryCode1=&categoryCode2=&searchType=DATA_TITLE&listRow=10&keyword=%EA%B5%90%EC%84%AD"],
+    ["전북_군산", "https://eminwon.gunsan.go.kr/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do"],
+    ["전북_전주", "https://www.jeonju.go.kr/planweb/board/list.9is?boardUid=9be517a7914528ce01930aa3ddc26cf0&contentUid=ff8080818990c349018b041a879f395a&rowCount=10&searchType=dataTitle&keyword=%EA%B5%90%EC%84%AD"],
+    ["경상남도", "https://www.gne.go.kr/user/bbs/BD_selectBbsList.do?csrfToken=84be7b4baea8a5da52e79f1b829dafd59cf7c68c304d971ad1d8676dbbc89021&q_rowPerPage=10&q_currPage=1&q_sortName=&q_sortOrder=&q_bbsSn=1238&q_bbsDocNo=&q_menu=&q_ctgryCd=&q_searchKeyTy=ttl___1002&q_searchVal=%EA%B5%90%EC%84%AD"],
+    ["경남_김해", "https://www.gimhae.go.kr/03360/00023/00029.web?cpage=1&deptCode=&stype=title&sstring=%EA%B5%90%EC%84%AD"],
+    ["경남_의령", "https://www.uiryeong.go.kr/board/list.uiryeong?orderBy=&boardId=BBS_0000070&searchStartDt=&searchEndDt=&startPage=1&menuCd=DOM_000000203003001001&contentsSid=201&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
+    ["경남_창원", "https://www.changwon.go.kr/cwportal/10310/10438/10439.web?cpage=1&pbsDivision=&stype=title&sstring=%EA%B5%90%EC%84%AD&upunit=10"],
+    ["경남_함안", "https://www.haman.go.kr/00960/00962.web?cpage=1&gubun=present&stype=title&sstring=%EA%B5%90%EC%84%AD"],
 #    ["경상북도", "https://www.gb.go.kr/Main/page.do?bdName=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&mnu_uid=6789&CSRF_TOKEN=&p1=0&p2=0&dept_name=&dept_code=&BD_CODE=gosi_notice&B_START=2026-01-09&B_END=2026-03-09&key=2&word=%EA%B5%90%EC%84%AD"],
 #    ["경북_경산", "https://www.gbgs.go.kr/open_content/ko/page.do"],
 #    ["경북_경주", "https://www.gyeongju.go.kr/open_content/ko/page.do"],
@@ -117,6 +115,8 @@ manual_sites = [
     ["울산_북구", "https://www.bukgu.ulsan.kr/lay1/S1T86C456/contents.do"],
     ["울산_울주군", "https://www.ulju.ulsan.kr/ulju/saeol/gosi/list.do?mId=0403010000"],
     ["울산_중구", "https://www.junggu.ulsan.kr/index.ulsan?menuCd=DOM_000000102004001000"],
+    ["경기도", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547#page=1#keyfield=SUBJECTANDREMARK#keyword=%EA%B5%90%EC%84%AD"],
+    ["경기_구리", "https://www.guri.go.kr/www/selectGosiNttList.do?key=387&searchGosiSe=01%2C04%2C06&searchDeptNm=&searchCnd=ALL&searchKrwd=%EA%B5%90%EC%84%AD"],
     ["경기_고양", "https://www.goyang.go.kr/www/link/BD_notice.do?se=01"],
     ["경기_광주", "https://www.gjcity.go.kr/portal/saeol/gosi/list.do?mId=0202010000"],
     ["경기_남양주", "https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492"],
@@ -136,48 +136,37 @@ def get_recent_dates():
 def check_site_stable(name, url, recent_dates):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
     }
     
     try:
-        # 경기도, 구리시 등 접속 지연 사이트를 위해 timeout 넉넉히 설정
-        response = requests.get(url, headers=headers, timeout=30, verify=False, allow_redirects=True)
-        response.encoding = response.apparent_encoding # 인코딩 자동 감지 강화
+        # 1. 데이터 가져오기 (인코딩 대응 강화)
+        response = requests.get(url, headers=headers, timeout=25, verify=False)
+        response.encoding = response.apparent_encoding 
         content = response.text
 
-        # [단계 1] 검색 결과가 절대 없는 경우 (양주시 등 오탐지 방지)
-        # 단, 이 문구가 있더라도 '교섭'이라는 단어가 '진짜 게시물 리스트' 안에 있다면 무시됨
-        fail_indicators = [
-            '검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', 
-            '데이터가 없습니다', '검색결과가 없습니다'
-        ]
+        # 2. 노이즈 제거 (메뉴, 스크립트 등에서 '교섭' 단어 오탐지 방지)
+        clean_text = re.sub(r'<script.*?</script>|<style.*?</style>|<header.*?</header>|<footer.*?</footer>', '', content, flags=re.DOTALL)
         
-        # [단계 2] 텍스트 클리닝 (HTML 태그 제거 후 순수 텍스트만 추출)
-        # 메뉴나 푸터에 있는 단어와 섞이지 않도록 스크립트/스타일 제거
-        clean_text = re.sub(r'<script.*?</script>', '', content, flags=re.DOTALL)
-        clean_text = re.sub(r'<style.*?</style>', '', clean_text, flags=re.DOTALL)
-        clean_text = re.sub(r'<header.*?</header>', '', clean_text, flags=re.DOTALL)
-        clean_text = re.sub(r'<footer.*?</footer>', '', clean_text, flags=re.DOTALL)
-        
-        # 순수 텍스트에서 '교섭' 단어 위치 확인
-        if "교섭" in clean_text:
-            # 양주시 사례처럼 '교섭' 단어가 메뉴에만 있는 경우를 걸러내기 위해
-            # '교섭' 단어 주변(앞뒤 100자)에 게시물임을 증명하는 '날짜'가 있는지 확인
-            # 혹은 게시판 특유의 번호 체계가 있는지 확인
-            
-            # 최근 날짜(7일 이내)가 텍스트에 포함되어 있다면 즉시 '신규' 반환
-            if any(date in clean_text for date in recent_dates):
-                return [name, url, "🔴 신규 가능성 높음"]
-            
-            # 신규는 아니지만 '교섭'과 함께 연도(2024~2026)가 근처에 발견되면 '기존 공고'
-            if re.search(r'202[4-6]', clean_text):
-                return [name, url, "🟡 기존 공고 존재"]
+        # 3. [최우선 순위] 최근 7일 이내 날짜 + '교섭' 단어 조합
+        # 서울, 부산 등 활발한 지역의 신규 공고를 가장 먼저 잡아냅니다.
+        has_recent = any(date in clean_text for date in recent_dates)
+        if "교섭" in clean_text and has_recent:
+            return [name, url, "🔴 신규 가능성 높음"]
 
-        # [단계 3] 위 조건에 걸리지 않으면 최종적으로 결과 없음 처리
+        # 4. [차순위] '결과 없음' 명시적 문구 확인 (양성, 음성 등 오탐지 방지)
+        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '0건']
+        if any(indicator in clean_text for indicator in fail_indicators):
+            return [name, url, "⚪ 결과 없음"]
+
+        # 5. [결과 판독] 날짜 양식과 '교섭'이 함께 존재할 때
+        # 2025-01-01 혹은 25.01.01 형태의 날짜가 '교섭' 주변에 있다면 공고로 인정
+        if "교섭" in clean_text and re.search(r'\d{2,4}[-.]\d{2}[-.]\d{2}', clean_text):
+            return [name, url, "🟡 기존 공고 존재"]
+
         return [name, url, "⚪ 결과 없음"]
 
-    except Exception as e:
-        return [name, url, f"⚠️ 직접 확인 요망 (에러: {str(e)[:10]}...)"]
+    except Exception:
+        return [name, url, "⚠️ 직접 확인 요망 (접속 지연)"]        
         
 # --- 화면 UI ---
 # st.warning("시스템 호환성을 위해 브라우저 엔진 없이 '직접 데이터 요청' 방식으로 작동합니다.")
@@ -217,6 +206,7 @@ if st.button("🚀 공고 확인 시작"):
     # CSV 다운로드 (자동 결과 기준)
     csv = df.to_csv(index=False).encode('utf-8-sig')
     st.download_button("📥 자동 확인 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
