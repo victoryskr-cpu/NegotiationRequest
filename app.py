@@ -5,7 +5,6 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import time
 import re
 from io import BytesIO
 
@@ -165,13 +164,15 @@ raw_target_data = {
         ["대구_달서구", "https://www.dalseo.daegu.kr/index.do?menu_id=10000104&searchKey=sj&searchKeyword=%EA%B5%90%EC%84%AD"],
         ["대구_중구", "https://www.jung.daegu.kr/new/pages/administration/page.html?mc=0159&search_key=sj&search_keyword=%EA%B5%90%EC%84%AD"]
     ],
-    "울산광역시": [],
+    "울산광역시": [
+        ["울산광역시", "https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan?mId=001004002000000000"]
+    ],
     "강원도": [
         ["강원특별자치도", "https://state.gwd.go.kr/portal/bulletin/notification?searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
         ["강원_춘천", "https://www.chuncheon.go.kr/cityhall/administrative-info/notice-info/notice-announcement/?searchCnd=SJ&searchWrd=%EA%B5%90%EC%84%AD"]
     ],
     "경기도": [
-#        ["경기도", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547#page=1#keyfield=SUBJECTANDREMARK#keyword=%EA%B5%90%EC%84%AD"],
+        ["경기도", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547"],
         ["경기_구리", "https://www.guri.go.kr/www/selectGosiNttList.do?key=387&searchCnd=ALL&searchKrwd=%EA%B5%90%EC%84%AD"],
     ],
     "전라북도": [
@@ -184,6 +185,7 @@ raw_target_data = {
         ["경북_칠곡", "https://www.chilgok.go.kr/portal/saeol/gosi/list.do?mId=0201030000"]
     ],
     "경상남도": [
+        ["경상남도", "https://www.gyeongnam.go.kr/index.gyeong?menuCd=DOM_000000135003009001"],
         ["경남_김해", "https://www.gimhae.go.kr/03360/00023/00029.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
         ["경남_의령", "https://www.uiryeong.go.kr/board/list.uiryeong?boardId=BBS_0000070&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
         ["경남_창원", "https://www.changwon.go.kr/cwportal/10310/10438/10439.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
@@ -206,6 +208,7 @@ raw_target_data = {
     ]
 }
 
+# 자동화 완료된 항목(경기도/울산광역시/경상남도)은 manual에서 제거
 manual_data = [
     ["보건복지부", "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003"],
     ["서울_강북구", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&bbsId=&cl1Cd=&optn5=&pageIndex=1&searchCnd2=&searchCnd=&searchWrd=%EA%B5%90%EC%84%AD"],
@@ -218,13 +221,11 @@ manual_data = [
     ["부산_사상구", "https://www.sasang.go.kr/tour/board/list.sasang?boardId=BBS_0000001&menuIdx=75&searchCnd=0&searchWrd=%EA%B5%90%EC%84%AD"],
     ["대구광역시", "https://www.daegu.go.kr/index.do?menu_id=00000052&srchVal=%EA%B5%90%EC%84%AD&srchKey=sj"],
     ["대구_남구", "https://nam.daegu.kr/index.do?menu_id=00000851"],
-    ["울산광역시", "https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan?mId=001004002000000000"],
     ["울산_남구", "https://www.ulsannamgu.go.kr/cop/bbs/selectSaeolGosiList.do"],
     ["울산_동구", "https://www.donggu.ulsan.kr/donggu/contents/contents.do?mId=4040100"],
     ["울산_북구", "https://www.bukgu.ulsan.kr/lay1/S1T86C456/contents.do"],
     ["울산_울주군", "https://www.ulju.ulsan.kr/ulju/saeol/gosi/list.do?mId=0403010000"],
     ["울산_중구", "https://www.junggu.ulsan.kr/index.ulsan?menuCd=DOM_000000102004001000"],
-    ["경기도", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547#page=1#keyfield=SUBJECTANDREMARK#keyword=%EA%B5%90%EC%84%AD"],
     ["경기_고양", "https://www.goyang.go.kr/www/link/BD_notice.do?se=01"],
     ["경기_광주", "https://www.gjcity.go.kr/portal/saeol/gosi/list.do?mId=0202010000"],
     ["경기_남양주", "https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492"],
@@ -235,7 +236,6 @@ manual_data = [
     ["경북_안동", "https://www.andong.go.kr/portal/saeol/gosi/list.do?mId=0401010000"],
     ["경북_구미", "https://www.gumi.go.kr/portal/saeol/gosi/list.do?seCode=01&mid=0401040000"],
     ["경북_포항", "https://www.pohang.go.kr/portal/saeol/gosi/list.do?mid=0202010000"],
-    ["경상남도", "https://www.gyeongnam.go.kr/index.gyeong?menuCd=DOM_000000135003009001"],
     ["충남_공주", "https://www.gongju.go.kr/prog/saeolGosi/GOSI_01/sub04_03_01/list.do"],
     ["충남_당진", "https://www.dangjin.go.kr/kor/sub03_02_01_01.do"],
     ["충남_천안", "https://www.cheonan.go.kr/kor/sub02_02_01.do"],
@@ -267,6 +267,15 @@ def create_session():
     session = requests.Session()
     session.headers.update(SESSION_HEADERS)
     return session
+
+def make_result(name, url, status, detected_date="", detected_title=""):
+    return {
+        "지자체명": name,
+        "링크": url,
+        "상태": status,
+        "감지일자": detected_date,
+        "감지제목": detected_title
+    }
 
 def extract_text_lines(html: str):
     soup = BeautifulSoup(html, "html.parser")
@@ -356,6 +365,20 @@ def clean_title(line: str):
     line = re.sub(r"^\d+\s*", "", line)
     return line[:120]
 
+def extract_best_title_from_lines(lines, keyword="교섭"):
+    candidates = []
+
+    for line in lines:
+        line = clean_title(line)
+        if keyword in line and not looks_like_noise(line):
+            candidates.append(line)
+
+    if not candidates:
+        return ""
+
+    candidates = sorted(candidates, key=len, reverse=True)
+    return candidates[0][:120]
+
 def classify_status_from_lines(lines, keyword: str = "교섭", recent_days: int = 7):
     recent_day_patterns = build_recent_day_patterns(recent_days)
 
@@ -395,8 +418,160 @@ def classify_status_from_lines(lines, keyword: str = "교섭", recent_days: int 
 
     return "🟡 기존 공고", "", first_title
 
+def analyze_response_text(name: str, url: str, text: str):
+    lines = extract_text_lines(text)
+    status, detected_date, detected_title = classify_status_from_lines(lines)
+
+    if status != "⚪ 결과 없음" and (not detected_title or len(detected_title) < 8):
+        detected_title = extract_best_title_from_lines(lines, keyword="교섭")
+
+    return make_result(name, url, status, detected_date, detected_title)
+
+def get_recent_search_window(days=90):
+    today = datetime.now(ZoneInfo("Asia/Seoul")).date()
+    start_date = today - timedelta(days=days)
+    return start_date.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")
+
+# -------------------------------------------------
+# 전용 자동검색 함수
+# -------------------------------------------------
+def check_gyeongnam(name: str, url: str):
+    """
+    실제 확인한 POST payload 기반
+    """
+    session = create_session()
+
+    try:
+        start_date, end_date = get_recent_search_window(90)
+
+        post_url = "https://www.gyeongnam.go.kr/index.gyeong?menuCd=DOM_000000135003009001"
+        payload = {
+            "conGosiGbn": "",
+            "confmStdt": start_date,
+            "confmEnddt": end_date,
+            "conAnnounceNo": "",
+            "conDeptNm": "",
+            "conTitle": "교섭"
+        }
+
+        response = session.post(post_url, data=payload, timeout=15)
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding or response.encoding
+
+        return analyze_response_text(name, url, response.text)
+
+    except requests.exceptions.Timeout:
+        return make_result(name, url, "⚠️ 타임아웃")
+    except requests.exceptions.HTTPError:
+        return make_result(name, url, "⚠️ 접속 오류")
+    except requests.exceptions.RequestException:
+        return make_result(name, url, "⚠️ 요청 실패")
+    except Exception:
+        return make_result(name, url, "⚠️ 파싱 오류")
+
+def check_gyeonggi(name: str, url: str):
+    """
+    경기도 게시판 검색 파라미터 직접 호출
+    정확 payload를 아직 확정하지 못해 GET 검색 + fallback 구조
+    """
+    session = create_session()
+
+    try:
+        search_url = "https://www.gg.go.kr/bbs/board.do"
+        params = {
+            "bsIdx": "469",
+            "menuId": "1547",
+            "keyfield": "SUBJECTANDREMARK",
+            "keyword": "교섭"
+        }
+
+        response = session.get(search_url, params=params, timeout=15)
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding or response.encoding
+
+        result = analyze_response_text(name, url, response.text)
+
+        # 결과가 너무 약하면 원래 URL로 한 번 fallback
+        if result["상태"] == "⚪ 결과 없음":
+            fallback = session.get(url, timeout=15)
+            fallback.raise_for_status()
+            fallback.encoding = fallback.apparent_encoding or fallback.encoding
+            result = analyze_response_text(name, url, fallback.text)
+
+        return result
+
+    except requests.exceptions.Timeout:
+        return make_result(name, url, "⚠️ 타임아웃")
+    except requests.exceptions.HTTPError:
+        return make_result(name, url, "⚠️ 접속 오류")
+    except requests.exceptions.RequestException:
+        return make_result(name, url, "⚠️ 요청 실패")
+    except Exception:
+        return make_result(name, url, "⚠️ 파싱 오류")
+
+def check_ulsan_metropolitan(name: str, url: str):
+    """
+    울산광역시는 검색 파라미터가 확정되지 않아 여러 일반적 패턴을 시도하고,
+    실패 시 일반 파서로 fallback
+    """
+    session = create_session()
+
+    try:
+        base_url = "https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan"
+        candidate_params = [
+            {"mId": "001004002000000000", "searchKeyword": "교섭"},
+            {"mId": "001004002000000000", "keyword": "교섭"},
+            {"mId": "001004002000000000", "searchValue": "교섭"},
+            {"mId": "001004002000000000", "searchWrd": "교섭"},
+            {"mId": "001004002000000000", "searchType": "title", "searchValue": "교섭"},
+            {"mId": "001004002000000000", "searchCnd": "title", "searchWrd": "교섭"},
+        ]
+
+        best_result = None
+
+        for params in candidate_params:
+            response = session.get(base_url, params=params, timeout=15)
+            response.raise_for_status()
+            response.encoding = response.apparent_encoding or response.encoding
+
+            result = analyze_response_text(name, url, response.text)
+
+            # 검색결과를 잡으면 바로 반환
+            if result["상태"] != "⚪ 결과 없음":
+                return result
+
+            best_result = result
+
+        # 전부 실패하면 원래 URL로 일반 파싱
+        fallback = session.get(url, timeout=15)
+        fallback.raise_for_status()
+        fallback.encoding = fallback.apparent_encoding or fallback.encoding
+        return analyze_response_text(name, url, fallback.text)
+
+    except requests.exceptions.Timeout:
+        return make_result(name, url, "⚠️ 타임아웃")
+    except requests.exceptions.HTTPError:
+        return make_result(name, url, "⚠️ 접속 오류")
+    except requests.exceptions.RequestException:
+        return make_result(name, url, "⚠️ 요청 실패")
+    except Exception:
+        return make_result(name, url, "⚠️ 파싱 오류")
+
+# -------------------------------------------------
+# 공통 검사 함수
+# -------------------------------------------------
 @st.cache_data(ttl=600, show_spinner=False)
 def check_site_stable(name: str, url: str):
+    # 전용 자동검색 분기
+    if name == "경상남도" or "gyeongnam.go.kr/index.gyeong" in url:
+        return check_gyeongnam(name, url)
+
+    if name == "경기도" or ("gg.go.kr/bbs/board.do" in url and "bsIdx=469" in url):
+        return check_gyeonggi(name, url)
+
+    if name == "울산광역시" or "ulsan.go.kr/u/rep/transfer/notice/list.ulsan" in url:
+        return check_ulsan_metropolitan(name, url)
+
     session = create_session()
 
     try:
@@ -404,53 +579,20 @@ def check_site_stable(name: str, url: str):
         response.raise_for_status()
         response.encoding = response.apparent_encoding or response.encoding
 
-        lines = extract_text_lines(response.text)
-        status, detected_date, detected_title = classify_status_from_lines(lines)
-
-        return {
-            "지자체명": name,
-            "링크": url,
-            "상태": status,
-            "게시일자": detected_date,
-            "감지제목": detected_title
-        }
+        return analyze_response_text(name, url, response.text)
 
     except requests.exceptions.Timeout:
-        return {
-            "지자체명": name,
-            "링크": url,
-            "상태": "⚠️ 타임아웃",
-            "게시일자": "",
-            "감지제목": ""
-        }
-
+        return make_result(name, url, "⚠️ 타임아웃")
     except requests.exceptions.HTTPError:
-        return {
-            "지자체명": name,
-            "링크": url,
-            "상태": "⚠️ 접속 오류",
-            "게시일자": "",
-            "감지제목": ""
-        }
-
+        return make_result(name, url, "⚠️ 접속 오류")
     except requests.exceptions.RequestException:
-        return {
-            "지자체명": name,
-            "링크": url,
-            "상태": "⚠️ 요청 실패",
-            "게시일자": "",
-            "감지제목": ""
-        }
-
+        return make_result(name, url, "⚠️ 요청 실패")
     except Exception:
-        return {
-            "지자체명": name,
-            "링크": url,
-            "상태": "⚠️ 파싱 오류",
-            "게시일자": "",
-            "감지제목": ""
-        }
+        return make_result(name, url, "⚠️ 파싱 오류")
 
+# -------------------------------------------------
+# 엑셀 / 표시 유틸
+# -------------------------------------------------
 def extract_href_for_excel(value):
     if isinstance(value, str) and 'href="' in value:
         match = re.search(r'href="(.*?)"', value)
@@ -493,7 +635,7 @@ def to_excel(df: pd.DataFrame):
             "지자체명": 18,
             "링크": 18,
             "상태": 16,
-            "게시일자": 14,
+            "감지일자": 14,
             "감지제목": 70
         }
 
@@ -587,18 +729,12 @@ if run_clicked:
             }
 
             for future in as_completed(future_map):
-                name, _ = future_map[future]
+                name, url = future_map[future]
 
                 try:
                     result = future.result()
                 except Exception:
-                    result = {
-                        "지자체명": name,
-                        "링크": "",
-                        "상태": "⚠️ 실행 오류",
-                        "게시일자": "",
-                        "감지제목": ""
-                    }
+                    result = make_result(name, url, "⚠️ 실행 오류")
 
                 results.append(result)
                 completed_count += 1
@@ -673,4 +809,3 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
-
