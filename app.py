@@ -14,16 +14,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. 스타일 설정
+# 2. 스타일 설정 (가운데 정렬 및 부제목 크기 조절 포함)
 st.markdown("""
     <style>
     .header-container { text-align: center; margin-top: -20px; margin-bottom: 20px; }
     .main-title { font-size: 1.8rem; font-weight: bold; margin-bottom: 5px; }
-    .sub-title { font-size: 1.2rem; color: #444; font-weight: 500; } /* 글자 크기 키움 */
+    .sub-title { font-size: 1.2rem; color: #444; font-weight: 500; }
     .status-text { font-weight: bold; color: #ff4b4b; display: block; text-align: center; margin-bottom: 10px; }
     .stButton>button { width: 100%; border-radius: 5px; min-height: 3.5em; font-weight: bold; }
+    
+    /* 직접 확인 리스트 제목 스타일 */
     .manual-title { font-size: 1.3rem; font-weight: bold; margin-bottom: 0px; }
     .manual-subtitle { font-size: 0.9rem; color: #666; display: block; margin-bottom: 10px; }
+    
+    /* 안내 문구 박스 */
     .guide-box { 
         background-color: #f0f2f6; 
         padding: 15px; 
@@ -34,6 +38,11 @@ st.markdown("""
         font-weight: bold;
         color: #ff4b4b;
     }
+    
+    /* 표 텍스트 가운데 정렬 설정 */
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: center !important; background-color: #f8f9fa; }
+    td { text-align: center !important; vertical-align: middle; }
     </style>
     <div class="header-container">
         <h1 class="main-title">지자체 교섭요구공고 확인</h1>
@@ -235,3 +244,4 @@ st.markdown(f"""
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
 st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
+
