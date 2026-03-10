@@ -471,8 +471,8 @@ def check_gyeongnam(name: str, url: str):
 
 def check_gyeonggi(name: str, url: str):
     """
-    경기도 디버그용 함수
-    응답 구조를 표에 직접 표시
+    경기도 게시판 검사 (AJAX API 기반)
+    실제 응답 구조: { total, items }
     """
     session = create_session()
 
@@ -499,71 +499,52 @@ def check_gyeonggi(name: str, url: str):
         response = session.post(api_url, data=payload, headers=headers, timeout=20)
         response.raise_for_status()
 
-        content_type = response.headers.get("Content-Type", "")
+        data = response.json()
+        items = data.get("items", [])
 
-        # 1차: JSON 파싱 시도
-        try:
-            data = response.json()
+        if not items:
+            return make_result(name, url, "⚪ 결과 없음")
 
-            if isinstance(data, dict):
-                top_keys = list(data.keys())
-                debug_keys = ", ".join([str(k) for k in top_keys])[:120]
-
-                # 안쪽 구조도 조금 더 보기
-                nested_hint = []
-                for k, v in data.items():
-                    if isinstance(v, dict):
-                        nested_hint.append(f"{k}:dict({','.join(list(v.keys())[:5])})")
-                    elif isinstance(v, list):
-                        nested_hint.append(f"{k}:list[{len(v)}]")
-                    else:
-                        nested_hint.append(f"{k}:{type(v).__name__}")
-
-                nested_hint_text = " | ".join(nested_hint)[:120]
-
-                return make_result(
-                    name,
-                    url,
-                    "⚠️ 디버그",
-                    content_type[:30],
-                    f"keys={debug_keys} / {nested_hint_text}"
-                )
-
-            elif isinstance(data, list):
-                return make_result(
-                    name,
-                    url,
-                    "⚠️ 디버그",
-                    content_type[:30],
-                    f"top=list[{len(data)}]"
-                )
-
-            else:
-                return make_result(
-                    name,
-                    url,
-                    "⚠️ 디버그",
-                    content_type[:30],
-                    f"json_type={type(data).__name__}"
-                )
-
-        # 2차: JSON 아니면 텍스트 앞부분 확인
-        except Exception:
-            text_preview = re.sub(r"\s+", " ", response.text[:300]).strip()
-            return make_result(
-                name,
-                url,
-                "⚠️ 디버그",
-                content_type[:30],
-                text_preview[:120]
+        # 교섭이 포함된 제목 우선 탐색
+        for item in items:
+            title = (
+                item.get("subject")
+                or item.get("title")
+                or item.get("sj")
+                or ""
             )
+
+            if "교섭" in title:
+                date = (
+                    item.get("regDt")
+                    or item.get("regdate")
+                    or item.get("date")
+                    or item.get("createdAt")
+                    or ""
+                )
+                return make_result(name, url, "🟡 기존 공고", date, title)
+
+        # 혹시 제목 키 이름이 다른 경우를 대비한 2차 탐색
+        for item in items:
+            for value in item.values():
+                if isinstance(value, str) and "교섭" in value:
+                    date = (
+                        item.get("regDt")
+                        or item.get("regdate")
+                        or item.get("date")
+                        or item.get("createdAt")
+                        or ""
+                    )
+                    return make_result(name, url, "🟡 기존 공고", date, value[:120])
+
+        return make_result(name, url, "⚪ 결과 없음")
 
     except requests.exceptions.Timeout:
         return make_result(name, url, "⚠️ 타임아웃")
     except requests.exceptions.HTTPError:
         return make_result(name, url, "⚠️ 접속 오류")
-    except requests.exceptions.RequestException as e:
-        return make_result(name, url, "⚠️ 요청 실패", "", str(e)[:120])
+    except requests.exceptions.RequestException:
+        return make_result(name, url, "⚠️ 요청 실패")
     except Exception as e:
         return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120])
         
@@ -600,7 +581,7 @@ def check_ulsan_metropolitan(name: str, url: str):
 # -------------------------------------------------
 # 공통 검사 함수
 # -------------------------------------------------
-# @st.cache_data(ttl=600, show_spinner=False)
+ @st.cache_data(ttl=600, show_spinner=False)
 def check_site_stable(name: str, url: str):
     # 전용 자동검색 분기
     if name == "경상남도" or "gyeongnam.go.kr/index.gyeong" in url:
@@ -849,6 +830,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
