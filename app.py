@@ -61,7 +61,7 @@ target_sites = [
     ["전북특별자치도", "https://www.jeonbuk.go.kr/board/list.jeonbuk?boardId=BBS_0000129&menuCd=DOM_000000102002005000&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
     ["전북_군산", "https://www.gunsan.go.kr/main/m141"],
     ["전북_전주", "https://www.jeonju.go.kr/planweb/board/list.9is?boardUid=9be517a7914528ce01930aa3ddc26cf0&contentUid=ff8080818990c349018b041a879f395a&searchType=dataTitle&keyword=%EA%B5%90%EC%84%AD"],
-    ["경상남도", "https://www.gyeongnam.go.kr/gosi/index.gyeong?amode=list&search_key=title&search_val=%EA%B5%90%EC%84%AD"],
+    ["경상남도", "https://www.gyeongnam.go.kr/gosi/index.gyeong?search_key=title&search_val=%EA%B5%90%EC%84%AD"],
     ["경남_김해", "https://www.gimhae.go.kr/03360/00023/00029.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
     ["경남_의령", "https://www.uiryeong.go.kr/board/list.uiryeong?boardId=BBS_0000070&menuCd=DOM_000000203003001001&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
     ["경남_창원", "https://www.changwon.go.kr/cwportal/10310/10438/10439.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
@@ -118,39 +118,37 @@ def get_recent_dates():
 def check_site_stable(name, url, recent_dates):
     headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
     try:
-        response = requests.get(url, headers=headers, timeout=25, verify=False)
+        # 경상남도 등 까다로운 사이트를 위해 세션 유지 및 리다이렉트 허용
+        session = requests.Session()
+        response = session.get(url, headers=headers, timeout=25, verify=False, allow_redirects=True)
         response.encoding = response.apparent_encoding 
         content = response.text
         
-        # [핵심 수정] 게시물 리스트가 위치하는 핵심 영역만 추출 (id/class가 contents, board_list 등인 곳)
-        # 이 작업이 수행되어야 푸터나 사이드바에 있는 '교섭' 단어에 낚이지 않습니다.
-        main_content = ""
-        main_match = re.search(r'<(?:div|section|tbody|table)[^>]*(?:id|class)=["\'](?:contents|board_list|list|table)[^>]*>(.*?)</(?:div|section|tbody|table)>', content, re.DOTALL | re.IGNORECASE)
+        # 본문 영역 추출 (id/class가 contents, board_list 등인 곳)
+        main_match = re.search(r'<(?:div|section|tbody|table)[^>]*(?:id|class)=["\'](?:contents|board_list|list|table|container)[^>]*>(.*?)</(?:div|section|tbody|table)>', content, re.DOTALL | re.IGNORECASE)
+        main_content = main_match.group(1) if main_match else re.sub(r'<script.*?</script>|<style.*?</style>|<header.*?</header>|<footer.*?</footer>|<nav.*?</nav>', '', content, flags=re.DOTALL)
         
-        if main_match:
-            main_content = main_match.group(1)
-        else:
-            # 영역 추출 실패 시 노이즈(메뉴, 푸터)를 최대한 제거한 텍스트 사용
-            main_content = re.sub(r'<script.*?</script>|<style.*?</style>|<header.*?</header>|<footer.*?</footer>|<nav.*?</nav>', '', content, flags=re.DOTALL)
-        
-        # 1. '결과 없음' 지표 체크 (오탐 방지 최우선 순위)
+        # 1. '결과 없음' 지표 체크
         fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건</span>', '0건</td>', '>0건<']
         if any(indicator in main_content for indicator in fail_indicators):
             return [name, url, "⚪ 결과 없음"]
 
-        # 2. 신규 공고 (날짜+교섭 조합)
-        has_recent = any(date in main_content for date in recent_dates)
-        if "교섭" in main_content and has_recent:
-            return [name, url, "🔴 신규 가능성 높음"]
+        # 2. [개선] 신규 공고 판독 (근접 매칭)
+        # '교섭' 단어 앞뒤 50자 이내에 오늘/어제 등 최근 날짜가 있는지 확인
+        for date in recent_dates:
+            # 교섭 단어와 최근 날짜가 본문에서 아주 가까이 붙어있는지 확인
+            pattern = f"교섭.{{0,50}}{date}|{date}.{{0,50}}교섭"
+            if re.search(pattern, main_content, re.DOTALL):
+                return [name, url, "🔴 신규 가능성 높음"]
 
-        # 3. 기존 공고 (날짜 양식 + 교섭 키워드 존재)
+        # 3. 기존 공고 (날짜 양식 + 교섭 키워드)
         if "교섭" in main_content and re.search(r'\d{2,4}[-.]\d{2}[-.]\d{2}', main_content):
             return [name, url, "🟡 기존 공고 존재"]
 
         return [name, url, "⚪ 결과 없음"]
     except:
         return [name, url, "⚠️ 직접 확인 요망 (접속 지연)"]
-
+        
 # --- 화면 UI ---
 if st.button("🚀 공고 확인 시작"):
     recent_dates = get_recent_dates()
@@ -175,6 +173,7 @@ if st.button("🚀 공고 확인 시작"):
     m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
     m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
     st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
+
 
 
 
