@@ -1,3 +1,4 @@
+import streamlit as st
 import pandas as pd
 import requests
 from datetime import datetime, timedelta
@@ -222,3 +223,4 @@ st.subheader(f"📢 직접 확인 리스트 ({len(manual_sites)}개 지역)")
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동 후 \'교섭\' 검색</a>')
 st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
+
