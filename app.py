@@ -470,10 +470,6 @@ def check_gyeongnam(name: str, url: str):
         return make_result(name, url, "⚠️ 파싱 오류")
 
 def check_gyeonggi(name: str, url: str):
-    """
-    경기도 게시판 검사 (AJAX API 기반)
-    """
-
     session = create_session()
 
     try:
@@ -483,8 +479,12 @@ def check_gyeonggi(name: str, url: str):
             "bsIdx": "469",
             "bcIdx": "0",
             "menuId": "1547",
+            "isManager": "false",
+            "isCharge": "false",
+            "keyfield": "SUBJECTANDREMARK",
+            "keyword": "교섭",
             "offset": "0",
-            "limit": "30"
+            "limit": "10"
         }
 
         headers = {
@@ -495,46 +495,25 @@ def check_gyeonggi(name: str, url: str):
         response = session.post(api_url, data=payload, headers=headers, timeout=20)
         response.raise_for_status()
 
-        data = response.json()
+        # 1) 응답 Content-Type 확인
+        st.write("경기도 응답 Content-Type:", response.headers.get("Content-Type", ""))
 
-        # 다양한 JSON 구조 대응
-        items = (
-            data.get("list")
-            or data.get("rows")
-            or data.get("data", {}).get("list")
-            or data.get("result", {}).get("list")
-            or []
-        )
+        # 2) JSON이면 JSON 그대로 확인
+        try:
+            data = response.json()
+            st.write("경기도 JSON 최상위 키:", list(data.keys()) if isinstance(data, dict) else type(data).__name__)
+            st.json(data)
+        except Exception:
+            # 3) JSON이 아니면 텍스트 앞부분 확인
+            st.write("JSON 파싱 실패, 텍스트 응답 앞부분:")
+            st.text(response.text[:3000])
 
-        if not items:
-            return make_result(name, url, "⚪ 결과 없음")
-
-        for item in items:
-
-            title = (
-                item.get("subject")
-                or item.get("title")
-                or item.get("sj")
-                or ""
-            )
-
-            if "교섭" in title:
-
-                date = (
-                    item.get("regDt")
-                    or item.get("regdate")
-                    or item.get("date")
-                    or ""
-                )
-
-                return make_result(name, url, "🟡 기존 공고", date, title)
-
-        return make_result(name, url, "⚪ 결과 없음")
+        return make_result(name, url, "⚠️ 디버그 확인 필요")
 
     except requests.exceptions.Timeout:
         return make_result(name, url, "⚠️ 타임아웃")
-
-    except Exception:
+    except Exception as e:
+        st.write("경기도 디버그 오류:", str(e))
         return make_result(name, url, "⚠️ 파싱 오류")
         
 def check_ulsan_metropolitan(name: str, url: str):
@@ -819,6 +798,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
