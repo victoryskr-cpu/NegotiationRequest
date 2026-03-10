@@ -237,12 +237,13 @@ if st.button("선택 지역 자동 확인 시작"):
 
 st.markdown("---")
 st.markdown(f"""
-    <div style="text-align: left;">
-        <p class="manual-title">직접 확인 리스트</p>
-        <p class="manual-subtitle">({len(manual_sites)}개 지역)</p>
+    <div style="text-align: left; margin-bottom: 10px;">
+        <span class="manual-title">직접 확인 리스트</span>
+        <span class="manual-subtitle" style="margin-left: 8px;">({len(manual_sites)}개 지역)</span>
     </div>
 """, unsafe_allow_html=True)
 
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
 st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
