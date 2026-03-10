@@ -187,7 +187,7 @@ if st.button("🚀 선택 지역 자동 확인 시작"):
 # 7. 수동 확인 섹션 (화면 하단으로 이동)
 if selected_regions:
     st.markdown("<div class='manual-container'>", unsafe_allow_html=True)
-    st.markdown("<div class='manual-title'>🔗 선택 지역 게시판 바로가기 (수동)</div>", unsafe_allow_html=True)
+    st.markdown("<div class='manual-title'>직접 이동하여 검색</div>", unsafe_allow_html=True)
     st.markdown("<div class='link-grid'>", unsafe_allow_html=True)
     
     for reg in selected_regions:
@@ -197,3 +197,4 @@ if selected_regions:
     st.markdown("</div></div>", unsafe_allow_html=True)
 else:
     st.markdown("<p style='text-align:center; color:#888; margin-top:50px;'>사이드바에서 지역을 선택하면 수동 확인 리스트가 나타납니다.</p>", unsafe_allow_html=True)
+
