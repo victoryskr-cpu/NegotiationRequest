@@ -5,17 +5,25 @@ from datetime import datetime, timedelta
 import time
 import re
 
-# 페이지 설정
-st.set_page_config(page_title="교섭공고 알리미", page_icon="🔍", layout="wide")
+# 페이지 설정: 모바일에서 사이드바가 기본으로 열려있도록 설정 (initial_sidebar_state="expanded")
+st.set_page_config(
+    page_title="교섭공고 알리미", 
+    page_icon="🔍", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# 헤더 디자인
+# 헤더 및 모바일 대응 스타일
 st.markdown("""
     <style>
     .header-container { text-align: center; margin-top: -20px; margin-bottom: 20px; }
-    .main-title { font-size: 2.2rem; font-weight: bold; line-height: 1.2; margin-bottom: 5px; }
-    .sub-title { font-size: 1.2rem; color: #666; font-weight: normal; line-height: 1.0; }
-    .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #f0f2f6; }
-    .status-text { font-weight: bold; color: #ff4b4b; margin-bottom: 10px; display: block; }
+    .main-title { font-size: 1.8rem; font-weight: bold; line-height: 1.2; margin-bottom: 5px; }
+    .sub-title { font-size: 1.0rem; color: #666; font-weight: normal; line-height: 1.2; }
+    /* 버튼 내 텍스트 가독성 조절 */
+    .stButton>button { width: 100%; border-radius: 5px; min-height: 3.5em; background-color: #f0f2f6; font-weight: bold; }
+    .status-text { font-weight: bold; color: #ff4b4b; margin-bottom: 10px; display: block; text-align: center; }
+    /* 모바일에서 테이블이 깨지지 않도록 설정 */
+    .reportview-container .main .block-container { padding-left: 1rem; padding-right: 1rem; }
     </style>
     <div class="header-container">
         <h1 class="main-title">지자체 교섭요구공고 확인</h1>
@@ -139,81 +147,78 @@ manual_data = [
 target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
 manual_sites = sorted(manual_data, key=lambda x: x[0])
 
-# 사이드바 설정
+# --- 모바일 대응: 사이드바 및 메인 화면 선택 UI ---
 st.sidebar.header("📍 검색 지역 설정")
 select_all = st.sidebar.checkbox("전체 지역 선택", value=False)
 selected_regions = []
+
 for region in sort_order:
     count = len(target_data[region])
-    is_checked = st.sidebar.checkbox(f"{region} ({count})", value=select_all)
-    if is_checked and count > 0: selected_regions.append(region)
+    # 모바일에서 사이드바가 닫혀있을 경우를 대비해 사이드바에 표시
+    is_checked = st.sidebar.checkbox(f"{region} ({count})", value=select_all, key=f"sidebar_{region}")
+    if is_checked and count > 0:
+        selected_regions.append(region)
 
 target_sites = []
-for reg in selected_regions: target_sites.extend(target_data[reg])
+for reg in selected_regions:
+    target_sites.extend(target_data[reg])
 
-# 🛠️ 정밀 날짜 판별 함수
+# --- 정밀 날짜 판별 함수 ---
 def check_site_stable(name, url):
     headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
     try:
         response = requests.get(url, headers=headers, timeout=15, verify=False)
         response.encoding = response.apparent_encoding 
-        # 불필요 태그 제거 및 텍스트 정규화
         clean_text = re.sub(r'<script.*?</script>|<style.*?</style>|<[^>]*>', '', response.text, flags=re.DOTALL)
         
-        # 1. '교섭' 단어 자체가 없으면 결과 없음
         if "교섭" not in clean_text:
             return [name, url, "⚪ 결과 없음"]
 
-        # 2. 최근 7일 날짜 리스트 생성 (2026년 기준 정밀 패턴)
         today = datetime.now()
         recent_days = []
         for i in range(8):
             dt = today - timedelta(days=i)
-            # 패턴: 2026-03-10, 26-03-10, 2026.03.10, 03.10 등
-            d_str = dt.strftime("%Y-%m-%d")
-            d_dot = dt.strftime("%Y.%m.%d")
-            d_short = dt.strftime("%m.%d")
+            d_str, d_dot, d_short = dt.strftime("%Y-%m-%d"), dt.strftime("%Y.%m.%d"), dt.strftime("%m.%d")
             recent_days.extend([d_str, d_dot, d_short, d_str[2:], d_dot[2:]])
 
-        # 3. '교섭' 단어 근처 50자 내에 최근 날짜가 있는지 확인
-        # 텍스트 내의 모든 '교섭' 위치를 찾음
         for m in re.finditer(r"교섭", clean_text):
-            start = max(0, m.start() - 50)
-            end = min(len(clean_text), m.end() + 50)
-            context = clean_text[start:end].replace(" ", "") # 공백 제거 후 비교
-            
+            start, end = max(0, m.start() - 50), min(len(clean_text), m.end() + 50)
+            context = clean_text[start:end].replace(" ", "")
             if any(day.replace("-",".").replace(".","") in context.replace(".","") for day in recent_days):
                 return [name, url, "🔴 신규 가능성 높음"]
-
         return [name, url, "🟡 기존 공고 존재"]
     except: return [name, url, "⚠️ 확인 요망"]
 
-# 메인 UI
-col1, col2, col3 = st.columns([1,2,1])
+# --- 메인 UI 영역 ---
+# 모바일에서 사이드바를 못 찾을 경우를 위해 상단에 안내 문구 추가
+if not selected_regions:
+    st.info("💡 왼쪽 상단의 [ > ] 화살표를 눌러 검색할 지역을 선택해주세요!")
+
+col1, col2, col3 = st.columns([1,3,1])
 with col2:
-    status_placeholder = st.empty() # % 표시용 빈 공간
+    status_placeholder = st.empty()
     if st.button("🚀 선택 지역 자동 확인 시작"):
-        if not target_sites: st.warning("지역을 선택해주세요.")
+        if not target_sites:
+            st.warning("먼저 지역을 선택해주세요.")
         else:
             results = []
             bar = st.progress(0)
             total = len(target_sites)
             
             for i, (name, url) in enumerate(target_sites):
-                # 실시간 % 표시 및 현재 작업 지역 표시
                 percent = int(((i + 1) / total) * 100)
+                # 버튼 옆/위에 실시간 %와 진행 상황 표시
                 status_placeholder.markdown(f"<span class='status-text'>⏳ [{percent}%] 확인 중: {name}</span>", unsafe_allow_html=True)
-                
                 results.append(check_site_stable(name, url))
                 bar.progress((i + 1) / total)
-                time.sleep(0.1) # 서버 부하 방지용 짧은 휴식
+                time.sleep(0.1)
 
             status_placeholder.success(f"✅ 검사 완료! (총 {total}개 지역)")
             df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
             df['링크'] = df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
             st.write(df.to_html(escape=False), unsafe_allow_html=True)
 
-# 직접 확인 리스트 상시 노출
+# 직접 확인 리스트 (항상 노출)
 st.markdown("---")
 st.subheader(f"📢 직접 확인 리스트 ({len(manual_sites)}개 지역)")
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
