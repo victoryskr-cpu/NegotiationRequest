@@ -6,7 +6,7 @@ import time
 import re
 from io import BytesIO
 
-# 1. 페이지 설정 (반드시 import 바로 다음에 위치해야 함)
+# 1. 페이지 설정
 st.set_page_config(
     page_title="교섭공고 알리미", 
     page_icon="🔍", 
@@ -14,19 +14,23 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. 헤더 및 스타일 설정
+# 2. 스타일 설정 (모바일 최적화 포함)
 st.markdown("""
     <style>
     .header-container { text-align: center; margin-top: -20px; margin-bottom: 20px; }
     .main-title { font-size: 1.8rem; font-weight: bold; }
     .status-text { font-weight: bold; color: #ff4b4b; display: block; text-align: center; margin-bottom: 10px; }
     .stButton>button { width: 100%; border-radius: 5px; min-height: 3.5em; font-weight: bold; }
+    /* 직접 확인 리스트 제목 스타일 */
+    .manual-title { font-size: 1.3rem; font-weight: bold; margin-bottom: 0px; }
+    .manual-subtitle { font-size: 0.9rem; color: #666; display: block; margin-bottom: 10px; }
     </style>
     <div class="header-container">
         <h1 class="main-title">지자체 교섭요구공고 확인</h1>
         <p>(돌봄사업장 지역 공고 모니터링)</p>
     </div>
 """, unsafe_allow_html=True)
+
 # 1. 자동 확인 데이터 (요청하신 순서대로 정렬 키 정의)
 sort_order = ["서울특별시", "부산광역시", "대구광역시", "울산광역시", "강원도", "전라북도", "경상북도", "경상남도", "충청남도", "충청북도"]
 
@@ -154,7 +158,7 @@ for region in sort_order:
 target_sites = []
 for reg in selected_regions: target_sites.extend(target_data[reg])
 
-# 4. 정밀 날짜 판별 함수
+# 4. 판별 및 엑셀 함수
 def check_site_stable(name, url):
     headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
     try:
@@ -176,7 +180,6 @@ def check_site_stable(name, url):
         return [name, url, "🟡 기존 공고 존재"]
     except: return [name, url, "⚠️ 확인 요망"]
 
-# 5. 엑셀 변환 함수
 def to_excel(df):
     output = BytesIO()
     df_excel = df.copy()
@@ -185,10 +188,7 @@ def to_excel(df):
         df_excel.to_excel(writer, index=False, sheet_name='교섭공고결과')
     return output.getvalue()
 
-# 6. 메인 UI 및 자동 확인 로직
-if not selected_regions:
-    st.info("💡 왼쪽 상단의 [ > ] 화살표를 눌러 지역을 선택해주세요!")
-
+# 5. 메인 UI
 col1, col2, col3 = st.columns([1,3,1])
 with col2:
     status_placeholder = st.empty()
@@ -203,24 +203,22 @@ with col2:
                 results.append(check_site_stable(name, url))
                 bar.progress((i + 1) / len(target_sites))
                 time.sleep(0.1)
-
             status_placeholder.success(f"✅ 검사 완료! (총 {len(target_sites)}개)")
             df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
             df_display = df.copy()
-            df_display['링크'] = df_display['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
-            
-            st.download_button(
-                label="📥 검색 결과 엑셀로 내려받기",
-                data=to_excel(df_display),
-                file_name=f"교섭공고_결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx",
-                mime="application/vnd.ms-excel"
-            )
+            df_display['링크'] = df_display['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
+            st.download_button(label="📥 결과 엑셀 내려받기", data=to_excel(df), file_name=f"교섭결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx", mime="application/vnd.ms-excel")
             st.write(df_display.to_html(escape=False), unsafe_allow_html=True)
 
-# 7. 직접 확인 리스트 (첫 화면 상시 노출)
+# 6. 직접 확인 리스트 (요청하신 스타일 적용)
 st.markdown("---")
-st.subheader(f"📢 직접 확인 리스트 ({len(manual_sites)}개 지역)")
-m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
-m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동 후 \'교섭\' 검색</a>')
-st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
+st.markdown(f"""
+    <div style="text-align: left;">
+        <p class="manual-title">직접 확인 리스트</p>
+        <p class="manual-subtitle">({len(manual_sites)}개 지역)</p>
+    </div>
+""", unsafe_allow_html=True)
 
+m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
+m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
+st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
