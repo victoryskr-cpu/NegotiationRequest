@@ -149,13 +149,23 @@ manual_data = [
 target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
 manual_sites = sorted(manual_data, key=lambda x: x[0])
 
+def on_all_clicked():
+    for region in sort_order:
+        st.session_state[f"sidebar_{region}"] = st.session_state["all_regions"]
+
 st.sidebar.header("📍 검색 지역 설정")
-select_all = st.sidebar.checkbox("전체 지역 선택", value=False)
+st.sidebar.checkbox("전체 지역 선택", value=False, key="all_regions", on_change=on_all_clicked)
+
 selected_regions = []
 for region in sort_order:
     count = len(target_data[region])
-    is_checked = st.sidebar.checkbox(f"{region} ({count})", value=select_all, key=f"sidebar_{region}")
-    if is_checked and count > 0: selected_regions.append(region)
+    # 개별 체크박스의 상태를 session_state로 직접 관리
+    if f"sidebar_{region}" not in st.session_state:
+        st.session_state[f"sidebar_{region}"] = False
+        
+    is_checked = st.sidebar.checkbox(f"{region} ({count})", key=f"sidebar_{region}")
+    if is_checked and count > 0:
+        selected_regions.append(region)
 
 target_sites = []
 for reg in selected_regions: target_sites.extend(target_data[reg])
