@@ -20,6 +20,12 @@ st.markdown("""
     .main-title { font-size: 1.8rem; font-weight: bold; margin-bottom: 5px; }
     .sub-title { font-size: 1.5rem; color: #444; font-weight: 500; }
     .status-text { font-weight: bold; color: #ff4b4b; display: block; text-align: center; margin-bottom: 10px; }
+    <div style="text-align: center;">
+        <h1 style="margin-bottom: 0px;">지자체 교섭요구공고 확인</h1>
+        <p style="font-size: 34px; font-weight: bold; color: #555; margin-top: 5px;">
+            (돌봄사업장 지역 공고 모니터링)
+        </p>
+    </div>
     
     /* 버튼 중앙 정렬 및 파란색 강조 스타일 */
     .stButton {
@@ -59,6 +65,9 @@ st.markdown("""
         <h1 class="main-title">지자체 교섭요구공고 확인</h1>
         <p class="sub-title">(돌봄 지자체 교섭요구 공고 모니터링)</p>
     </div>
+    <p style="text-align: center; color: #ff4b4b; font-size: 18px; font-weight: bold; margin-top: 20px; margin-bottom: 20px;">
+        왼쪽 상단 [ > ] 화살표 눌러 지역 선택!
+    </p>
 """, unsafe_allow_html=True)
 
 sort_order = ["서울특별시", "부산광역시", "대구광역시", "울산광역시", "강원도", "전라북도", "경상북도", "경상남도", "충청남도", "충청북도"]
@@ -259,6 +268,7 @@ st.markdown(f"""
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
 st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
