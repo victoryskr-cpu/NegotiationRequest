@@ -538,13 +538,7 @@ def check_gyeonggi(name: str, url: str):
             )
 
             if "교섭" in title:
-                date = (
-                    item.get("regDt")
-                    or item.get("regdate")
-                    or item.get("date")
-                    or item.get("createdAt")
-                    or ""
-                )
+                date = extract_date_from_item(item)
                 return make_result(name, url, "🟡 기존 공고", date, title)
 
         # 혹시 제목 키 이름이 다른 경우를 대비한 2차 탐색
@@ -848,6 +842,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
