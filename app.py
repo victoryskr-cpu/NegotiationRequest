@@ -511,42 +511,24 @@ def check_gyeonggi(name: str, url: str):
 
 def check_ulsan_metropolitan(name: str, url: str):
     """
-    울산광역시는 검색 파라미터가 확정되지 않아 여러 일반적 패턴을 시도하고,
-    실패 시 일반 파서로 fallback
+    울산광역시 고시공고 전용 POST 검색
+    실제 확인한 payload 기반
     """
     session = create_session()
 
     try:
-        base_url = "https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan"
-        candidate_params = [
-            {"mId": "001004002000000000", "searchKeyword": "교섭"},
-            {"mId": "001004002000000000", "keyword": "교섭"},
-            {"mId": "001004002000000000", "searchValue": "교섭"},
-            {"mId": "001004002000000000", "searchWrd": "교섭"},
-            {"mId": "001004002000000000", "searchType": "title", "searchValue": "교섭"},
-            {"mId": "001004002000000000", "searchCnd": "title", "searchWrd": "교섭"},
-        ]
+        post_url = "https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan?mId=001004002000000000"
+        payload = {
+            "srchGubun": "",
+            "srchType": "srchSj",
+            "srchWord": "교섭"
+        }
 
-        best_result = None
+        response = session.post(post_url, data=payload, timeout=15)
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding or response.encoding
 
-        for params in candidate_params:
-            response = session.get(base_url, params=params, timeout=15)
-            response.raise_for_status()
-            response.encoding = response.apparent_encoding or response.encoding
-
-            result = analyze_response_text(name, url, response.text)
-
-            # 검색결과를 잡으면 바로 반환
-            if result["상태"] != "⚪ 결과 없음":
-                return result
-
-            best_result = result
-
-        # 전부 실패하면 원래 URL로 일반 파싱
-        fallback = session.get(url, timeout=15)
-        fallback.raise_for_status()
-        fallback.encoding = fallback.apparent_encoding or fallback.encoding
-        return analyze_response_text(name, url, fallback.text)
+        return analyze_response_text(name, url, response.text)
 
     except requests.exceptions.Timeout:
         return make_result(name, url, "⚠️ 타임아웃")
@@ -556,7 +538,7 @@ def check_ulsan_metropolitan(name: str, url: str):
         return make_result(name, url, "⚠️ 요청 실패")
     except Exception:
         return make_result(name, url, "⚠️ 파싱 오류")
-
+        
 # -------------------------------------------------
 # 공통 검사 함수
 # -------------------------------------------------
@@ -809,3 +791,4 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
