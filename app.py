@@ -367,7 +367,7 @@ def check_site_stable(name: str, url: str):
         return {
             "지자체명": name,
             "링크": url,
-            "상태": "⚠️ 접속오류",
+            "상태": "⚠️ 타임아웃",
             "감지일자": "",
             "감지제목": ""
         }
@@ -378,7 +378,6 @@ def check_site_stable(name: str, url: str):
             "링크": url,
             "상태": "⚠️ 접속 오류",
             "감지일자": "",
-            "확인시각": checked_at,
             "감지제목": ""
         }
 
@@ -388,7 +387,6 @@ def check_site_stable(name: str, url: str):
             "링크": url,
             "상태": "⚠️ 요청 실패",
             "감지일자": "",
-            "확인시각": checked_at,
             "감지제목": ""
         }
 
@@ -398,7 +396,6 @@ def check_site_stable(name: str, url: str):
             "링크": url,
             "상태": "⚠️ 파싱 오류",
             "감지일자": "",
-            "확인시각": checked_at,
             "감지제목": ""
         }
 
@@ -597,3 +594,4 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
