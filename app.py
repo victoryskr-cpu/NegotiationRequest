@@ -6,7 +6,7 @@ import time
 import re
 
 # 페이지 설정
-st.set_page_config(page_title="교섭공고 알리미", page_icon="🔍")
+st.set_page_config(page_title="교섭공고 알리미", page_icon="🔍", layout="wide")
 
 # 헤더 디자인
 st.markdown("""
@@ -14,6 +14,7 @@ st.markdown("""
     .header-container { text-align: center; margin-top: -20px; margin-bottom: 20px; }
     .main-title { font-size: 2.2rem; font-weight: bold; line-height: 1.2; margin-bottom: 5px; }
     .sub-title { font-size: 1.2rem; color: #666; font-weight: normal; line-height: 1.0; }
+    .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #f0f2f6; }
     </style>
     <div class="header-container">
         <h1 class="main-title">지자체 교섭요구공고 확인</h1>
@@ -21,60 +22,80 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# 1. 자동 확인 가능 리스트 (검증 완료)
-target_sites = [
-#    ["서울특별시", "https://www.seoul.go.kr/news/news_notice.do?bbsNo=277&srchText=교섭"],
-#    ["강남구청", "https://www.gangnam.go.kr/notice/list.do?mid=ID05_040201&keyfield=BNI_MAIN_TITLE&keyword=교섭"],
-#    ["강동구청", "https://www.gangdong.go.kr/web/newportal/notice/01?sv=교섭"],
-#    ["강서구청", "https://www.gangseo.seoul.kr/gs040301?srchKey=sj&srchText=교섭"],
-#   ["구로구청", "https://www.guro.go.kr/www/selectBbsNttList.do?key=1791&bbsNo=663&searchCnd=SJ&searchKrwd=교섭"],
-#    ["금천구청", "https://www.geumcheon.go.kr/portal/tblSeolGosiDetailList.do?key=294&rep=1&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["노원구청", "https://www.nowon.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1003&q_searchVal=%EA%B5%90%EC%84%AD"],
-#    ["도봉구청", "https://www.dobong.go.kr/WDB_DEV/gosigong_go/default.asp?strSearchType=1&strSearchKeyword=%EA%B5%90%EC%84%AD"],
-#    ["동대문구청", "https://www.ddm.go.kr/www/selectEminwonWebList.do?key=3291&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["동작구청", "https://www.dongjak.go.kr/portal/bbs/B0001297/list.do?menuNo=201317&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD"],
-#    ["마포구청", "https://www.mapo.go.kr/site/main/nPortal/list?sv=%EA%B5%90%EC%84%AD"],
-#    ["서초구청", "https://www.seocho.go.kr/site/seocho/05/10506020000002015070811.jsp"],
-#    ["성동구청", "https://www.sd.go.kr/main/selectBbsNttList.do?key=1473&bbsNo=184&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["성북구청", "https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchCnd2=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["영등포구청", "https://www.ydp.go.kr/www/selectEminwonList.do?key=2851&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["용산구청", "https://www.yongsan.go.kr/portal/bbs/B0000095/list.do?menuNo=200233&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD"],
-#    ["은평구청", "https://www.ep.go.kr/www/selectEminwonList.do?key=754&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["중랑구청", "https://www.jungnang.go.kr/portal/bbs/list/B0000117.do?menuNo=200475&searchWrd=%EA%B5%90%EC%84%AD"],
-#    ["부산광역시", "https://www.busan.go.kr/nbgosi/list?schKeyType=A&srchText=%EA%B5%90%EC%84%AD"],
-#    ["부산_남구", "https://www.bsnamgu.go.kr/index.namgu?menuCd=DOM_000000105001002000&search_key=title&search_val=%EA%B5%90%EC%84%AD"],
-#    ["부산_동래구", "https://www.dongnae.go.kr/index.dongnae?menuCd=DOM_000000103001003000&search_key=title&search_val=%EA%B5%90%EC%84%AD"],
-#    ["대구_동구", "https://www.dong.daegu.kr/portal/saeol/gosi/list.do?mid=0201020000&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["대구_달서구", "https://www.dalseo.daegu.kr/index.do?menu_id=10000104&searchKey=sj&searchKeyword=%EA%B5%90%EC%84%AD"],
-#    ["대구_중구", "https://www.jung.daegu.kr/new/pages/administration/page.html?mc=0159&search_key=sj&search_keyword=%EA%B5%90%EC%84%AD"],
-#    ["경기_양주", "https://www.yangju.go.kr/www/selectEminwonList.do?key=4075&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["경기_양평", "https://www.yp21.go.kr/www/selectBbsNttList.do?key=1119&bbsNo=5&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["경기_포천", "https://www.pocheon.go.kr/www/selectEminwonList.do?key=12563&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["충북_제천", "https://www.jecheon.go.kr/www/selectBbsNttList.do?key=5233&bbsNo=18&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["충북_보은", "https://www.boeun.go.kr/www/selectBbsNttList.do?key=194&bbsNo=66&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["충북_옥천", "https://www.oc.go.kr/www/selectBbsNttList.do?key=236&bbsNo=40&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["충북_진천", "https://www.jincheon.go.kr/home/sub.do?menukey=235&searchCnd=sj&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["충북_괴산", "https://www.goesan.go.kr/www/selectBbsNttList.do?key=604&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["충북_음성", "https://www.eumseong.go.kr/www/selectEminwonList.do?key=352&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
-#    ["강원특별자치도", "https://state.gwd.go.kr/portal/bulletin/notification?searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
-#    ["강원_춘천", "https://www.chuncheon.go.kr/cityhall/administrative-info/notice-info/notice-announcement/?searchCnd=SJ&searchWrd=%EA%B5%90%EC%84%AD"],
-#    ["전북특별자치도", "https://www.jeonbuk.go.kr/board/list.jeonbuk?boardId=BBS_0000129&menuCd=DOM_000000102002005000&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
-#    ["전북_군산", "https://www.gunsan.go.kr/main/m141"],
-#    ["전북_전주", "https://www.jeonju.go.kr/planweb/board/list.9is?boardUid=9be517a7914528ce01930aa3ddc26cf0&contentUid=ff8080818990c349018b041a879f395a&searchType=dataTitle&keyword=%EA%B5%90%EC%84%AD"],
-#    ["경남_김해", "https://www.gimhae.go.kr/03360/00023/00029.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
-#    ["경남_의령", "https://www.uiryeong.go.kr/board/list.uiryeong?boardId=BBS_0000070&menuCd=DOM_000000203003001001&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
-#    ["경남_창원", "https://www.changwon.go.kr/cwportal/10310/10438/10439.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
-#    ["경남_함안", "https://www.haman.go.kr/00960/00962.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
-#     ["충청남도", "https://www.chungnam.go.kr/cnportal/province/province/list.do?menuNo=500487&pageIndex=1&cl1CdValue=&sdate=2025-03-10&edate=2026-03-10&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD&pageUnit=10"],
-#    ["충남_아산", "https://www.asan.go.kr/main/cms/?no=257"],
-#    ["충남_서산", "https://www.seosan.go.kr/www/contents.do?key=1258"],
-#    ["충남_논산", "https://nonsan.go.kr/kor/html/sub03/03010201.html"],
-#    ["경상북도", "https://www.gb.go.kr/Main/page.do?bdName=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&mnu_uid=6789&CSRF_TOKEN=&p1=0&p2=0&dept_name=&dept_code=&BD_CODE=gosi_notice&B_START=2026-01-10&B_END=2026-03-10&key=2&word=%EA%B5%90%EC%84%AD"],
-#    ["경북_칠곡", "https://www.chilgok.go.kr/portal/saeol/gosi/list.do?mId=0201030000"],
-]
+# 1. 자동 확인 데이터 (광역별 분리 및 가나다 정렬)
+raw_target_data = {
+    "서울특별시": [
+        ["서울특별시", "https://www.seoul.go.kr/news/news_notice.do?bbsNo=277&srchText=교섭"],
+        ["강남구청", "https://www.gangnam.go.kr/notice/list.do?mid=ID05_040201&keyfield=BNI_MAIN_TITLE&keyword=교섭"],
+        ["강동구청", "https://www.gangdong.go.kr/web/newportal/notice/01?sv=교섭"],
+        ["강서구청", "https://www.gangseo.seoul.kr/gs040301?srchKey=sj&srchText=교섭"],
+        ["구로구청", "https://www.guro.go.kr/www/selectBbsNttList.do?key=1791&bbsNo=663&searchCnd=SJ&searchKrwd=교섭"],
+        ["금천구청", "https://www.geumcheon.go.kr/portal/tblSeolGosiDetailList.do?key=294&rep=1&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["노원구청", "https://www.nowon.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1003&q_searchVal=%EA%B5%90%EC%84%AD"],
+        ["도봉구청", "https://www.dobong.go.kr/WDB_DEV/gosigong_go/default.asp?strSearchType=1&strSearchKeyword=%EA%B5%90%EC%84%AD"],
+        ["동대문구청", "https://www.ddm.go.kr/www/selectEminwonWebList.do?key=3291&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["동작구청", "https://www.dongjak.go.kr/portal/bbs/B0001297/list.do?menuNo=201317&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD"],
+        ["마포구청", "https://www.mapo.go.kr/site/main/nPortal/list?sv=%EA%B5%90%EC%84%AD"],
+        ["성동구청", "https://www.sd.go.kr/main/selectBbsNttList.do?key=1473&bbsNo=184&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["성북구청", "https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchCnd2=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["영등포구청", "https://www.ydp.go.kr/www/selectEminwonList.do?key=2851&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["용산구청", "https://www.yongsan.go.kr/portal/bbs/B0000095/list.do?menuNo=200233&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD"],
+        ["은평구청", "https://www.ep.go.kr/www/selectEminwonList.do?key=754&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["중랑구청", "https://www.jungnang.go.kr/portal/bbs/list/B0000117.do?menuNo=200475&searchWrd=%EA%B5%90%EC%84%AD"]
+    ],
+    "부산광역시": [
+        ["부산광역시", "https://www.busan.go.kr/nbgosi/list?schKeyType=A&srchText=%EA%B5%90%EC%84%AD"],
+        ["부산_남구", "https://www.bsnamgu.go.kr/index.namgu?menuCd=DOM_000000105001002000&search_key=title&search_val=%EA%B5%90%EC%84%AD"],
+        ["부산_동래구", "https://www.dongnae.go.kr/index.dongnae?menuCd=DOM_000000103001003000&search_key=title&search_val=%EA%B5%90%EC%84%AD"]
+    ],
+    "대구광역시": [
+        ["대구_동구", "https://www.dong.daegu.kr/portal/saeol/gosi/list.do?mid=0201020000&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["대구_달서구", "https://www.dalseo.daegu.kr/index.do?menu_id=10000104&searchKey=sj&searchKeyword=%EA%B5%90%EC%84%AD"],
+        ["대구_중구", "https://www.jung.daegu.kr/new/pages/administration/page.html?mc=0159&search_key=sj&search_keyword=%EA%B5%90%EC%84%AD"]
+    ],
+    "울산광역시": [],
+    "경기도": [
+        ["경기_양주", "https://www.yangju.go.kr/www/selectEminwonList.do?key=4075&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["경기_양평", "https://www.yp21.go.kr/www/selectBbsNttList.do?key=1119&bbsNo=5&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["경기_포천", "https://www.pocheon.go.kr/www/selectEminwonList.do?key=12563&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"]
+    ],
+    "강원도": [
+        ["강원특별자치도", "https://state.gwd.go.kr/portal/bulletin/notification?searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
+        ["강원_춘천", "https://www.chuncheon.go.kr/cityhall/administrative-info/notice-info/notice-announcement/?searchCnd=SJ&searchWrd=%EA%B5%90%EC%84%AD"]
+    ],
+    "충청북도": [
+        ["충북_괴산", "https://www.goesan.go.kr/www/selectBbsNttList.do?key=604&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["충북_보은", "https://www.boeun.go.kr/www/selectBbsNttList.do?key=194&bbsNo=66&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["충북_옥천", "https://www.oc.go.kr/www/selectBbsNttList.do?key=236&bbsNo=40&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["충북_음성", "https://www.eumseong.go.kr/www/selectEminwonList.do?key=352&searchCnd=B_Subject&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["충북_제천", "https://www.jecheon.go.kr/www/selectBbsNttList.do?key=5233&bbsNo=18&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["충북_진천", "https://www.jincheon.go.kr/home/sub.do?menukey=235&searchCnd=sj&searchKrwd=%EA%B5%90%EC%84%AD"]
+    ],
+    "충청남도": [
+        ["충청남도", "https://www.chungnam.go.kr/cnportal/province/province/list.do?searchWrd=%EA%B5%90%EC%84%AD"],
+        ["충남_서산", "https://www.seosan.go.kr/www/contents.do?key=1258"],
+        ["충남_아산", "https://www.asan.go.kr/main/cms/?no=257"],
+        ["충남_논산", "https://nonsan.go.kr/kor/html/sub03/03010201.html"]
+    ],
+    "전라도": [
+        ["전북특별자치도", "https://www.jeonbuk.go.kr/board/list.jeonbuk?boardId=BBS_0000129&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
+        ["전북_군산", "https://www.gunsan.go.kr/main/m141"],
+        ["전북_전주", "https://www.jeonju.go.kr/planweb/board/list.9is?boardUid=9be517a7914528ce01930aa3ddc26cf0&contentUid=ff8080818990c349018b041a879f395a&searchType=dataTitle&keyword=%EA%B5%90%EC%84%AD"]
+    ],
+    "경상북도": [
+        ["경상북도", "https://www.gb.go.kr/Main/page.do?bdName=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&mnu_uid=6789&word=%EA%B5%90%EC%84%AD"],
+        ["경북_칠곡", "https://www.chilgok.go.kr/portal/saeol/gosi/list.do?mId=0201030000"]
+    ],
+    "경상남도": [
+        ["경남_김해", "https://www.gimhae.go.kr/03360/00023/00029.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
+        ["경남_의령", "https://www.uiryeong.go.kr/board/list.uiryeong?boardId=BBS_0000070&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
+        ["경남_창원", "https://www.changwon.go.kr/cwportal/10310/10438/10439.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
+        ["경남_함안", "https://www.haman.go.kr/00960/00962.web?stype=title&sstring=%EA%B5%90%EC%84%AD"]
+    ]
+}
 
-# 2. 직접 확인 필요 리스트 (분류 완료)
-manual_sites = [
+# 2. 수동 확인 데이터 (누락 없이 전원 복구 및 가나다 정렬)
+raw_manual_data = [
     ["보건복지부", "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003"],
     ["강북구청", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082"],
     ["관악구청", "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/List.do?typeCode=1&searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
@@ -87,7 +108,7 @@ manual_sites = [
     ["대구광역시", "https://www.daegu.go.kr/index.do?menu_id=00000052&srchVal=%EA%B5%90%EC%84%AD&srchKey=sj"],
     ["대구_남구", "https://nam.daegu.kr/index.do?menu_id=00000851"],
     ["울산광역시", "https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan?mId=001004002000000000"],
-    ["울산_남구", "https://www.ulsannamgu.go.kr/cop/bbs/selectSaeolGosiList.do"],    
+    ["울산_남구", "https://www.ulsannamgu.go.kr/cop/bbs/selectSaeolGosiList.do"],
     ["울산_동구", "https://www.donggu.ulsan.kr/donggu/contents/contents.do?mId=4040100"],
     ["울산_북구", "https://www.bukgu.ulsan.kr/lay1/S1T86C456/contents.do"],
     ["울산_울주군", "https://www.ulju.ulsan.kr/ulju/saeol/gosi/list.do?mId=0403010000"],
@@ -99,91 +120,99 @@ manual_sites = [
     ["경기_남양주", "https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492"],
     ["경기_평택", "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosi/list.do?mid=0401020100"],
     ["경북_경주", "https://www.gyeongju.go.kr/open_content/ko/page.do?mnu_uid=423"],
-    ["경북_경산", "https://www.gbgs.go.kr/open_content/ko/page.do?mnu_uid=2160&"],    
+    ["경북_경산", "https://www.gbgs.go.kr/open_content/ko/page.do?mnu_uid=2160&"],
     ["경북_김천", "https://www.gc.go.kr/portal/saeol/gosi/list.do?mId=1202180100"],
     ["경북_안동", "https://www.andong.go.kr/portal/saeol/gosi/list.do?mId=0401010000"],
-    ["경북_구미", "https://www.gumi.go.kr/portal/saeol/gosi/list.do?seCode=01&mid=0401040000&token=1773109728792"],      
-    ["경북_포항", "https://www.pohang.go.kr/portal/saeol/gosi/list.do?mid=0202010000"],    
+    ["경북_구미", "https://www.gumi.go.kr/portal/saeol/gosi/list.do?seCode=01&mid=0401040000"],
+    ["경북_포항", "https://www.pohang.go.kr/portal/saeol/gosi/list.do?mid=0202010000"],
     ["경상남도", "https://www.gyeongnam.go.kr/index.gyeong?menuCd=DOM_000000135003009001"],
     ["충남_공주", "https://www.gongju.go.kr/prog/saeolGosi/GOSI_01/sub04_03_01/list.do"],
-    ["충남_당진", "https://www.dangjin.go.kr/kor/sub03_02_01_01.do"],    
-    ["충남_천안", "https://www.cheonan.go.kr/kor/sub02_02_01.do"],    
+    ["충남_당진", "https://www.dangjin.go.kr/kor/sub03_02_01_01.do"],
+    ["충남_천안", "https://www.cheonan.go.kr/kor/sub02_02_01.do"],
     ["충청북도", "https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422&searchKrwd=%EA%B5%90%EC%84%AD"],
     ["충북_단양", "https://www.danyang.go.kr/dy21/976"],
     ["충북_영동", "https://www.yd21.go.kr/kr/html/sub02/020103.html?mode=L"],
     ["충북_증평", "http://www.jp.go.kr/kor/sub03_01_03.do"],
     ["충북_청주", "https://www.cheongju.go.kr/www/selectEminwonNoticeList.do?key=281&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["충북_충주", "https://www.chungju.go.kr/www/selectEminwonList.do?key=510&ancmt_sj=%EA%B5%90%EC%84%AD"],
-
-
+    ["충북_충주", "https://www.chungju.go.kr/www/selectEminwonList.do?key=510&ancmt_sj=%EA%B5%90%EC%84%AD"]
 ]
 
-def get_recent_dates():
-    return [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
+# 가나다순 정렬 자동 처리
+target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
+manual_sites = sorted(raw_manual_data, key=lambda x: x[0])
+
+# 사이드바 설정
+st.sidebar.header("📍 검색 지역 설정")
+all_regions = list(target_data.keys())
+selected_regions = []
+
+if st.sidebar.checkbox("전체 지역 선택", value=True):
+    selected_regions = all_regions
+else:
+    for region in all_regions:
+        if target_data[region]: # 데이터가 있는 경우만 체크박스
+            if st.sidebar.checkbox(region, value=False):
+                selected_regions.append(region)
+
+# 실행용 타겟 리스트 구성
+target_sites = []
+for reg in selected_regions:
+    target_sites.extend(target_data[reg])
 
 def check_site_stable(name, url, recent_dates):
     headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
     try:
         session = requests.Session()
-        response = session.get(url, headers=headers, timeout=20, verify=False, allow_redirects=True)
+        response = session.get(url, headers=headers, timeout=15, verify=False, allow_redirects=True)
         response.encoding = response.apparent_encoding 
         content = response.text
-        
-        # 스크립트 등 노이즈 제거
         main_content = re.sub(r'<script.*?</script>|<style.*?</style>|<header.*?</header>|<footer.*?</footer>|<nav.*?</nav>', '', content, flags=re.DOTALL)
         
-        # 1. 결과 없음 지표 체크 (새올 시스템 전용 문구 추가)
-        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건</span>', '0건</td>', '>0건<', '검색결과가 없습니다', '검색결과 0건', '해당하는 내역이 없습니다']
+        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건</span>', '0건</td>', '>0건<', '검색결과가 없습니다', '검색결과 0건']
         if any(indicator in main_content for indicator in fail_indicators):
             return [name, url, "⚪ 결과 없음"]
 
-        # 2. 신규 공고 판독 (김천, 안동, 구미 등의 날짜 형식 대응)
         for date in recent_dates:
-            # 다양한 날짜 형식 생성 (2024-03-21, 2024.03.21, 24.03.21 등)
             dot_date = date.replace('-', '.')
             short_dot_date = dot_date[2:]
-            
-            # 교섭 단어와 날짜가 근접(200자)하게 있는지 검사
-            patterns = [
-                f"교섭.{{0,200}}({date}|{dot_date}|{short_dot_date})",
-                f"({date}|{dot_date}|{short_dot_date}).{{0,200}}교섭"
-            ]
-            
+            patterns = [f"교섭.{{0,200}}({date}|{dot_date}|{short_dot_date})", f"({date}|{dot_date}|{short_dot_date}).{{0,200}}교섭"]
             if any(re.search(p, main_content, re.DOTALL) for p in patterns):
                 return [name, url, "🔴 신규 가능성 높음"]
 
-        # 3. 기존 공고 판독
         if "교섭" in main_content:
             return [name, url, "🟡 기존 공고 존재"]
-
         return [name, url, "⚪ 결과 없음"]
     except:
-        return [name, url, "⚠️ 직접 확인 요망 (접속 지연)"]
-        
-# --- 화면 UI ---
-if st.button("🚀 공고 확인 시작"):
-    recent_dates = get_recent_dates()
-    results = []
-    progress_text = st.empty()
-    bar = st.progress(0)
-    
-    for i, (name, url) in enumerate(target_sites):
-        progress_text.text(f"현재 확인 중: {name} ({i+1}/{len(target_sites)})")
-        results.append(check_site_stable(name, url, recent_dates))
-        bar.progress((i + 1) / len(target_sites))
-        time.sleep(0.1)
+        return [name, url, "⚠️ 확인 요망 (접속 지연)"]
 
-    df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
-    df['링크'] = df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
-    
-    st.success("자동 검사가 완료되었습니다!")
-    st.write(df.to_html(escape=False), unsafe_allow_html=True)
+# 메인 UI
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
+    if st.button("🚀 선택 지역 공고 확인 시작"):
+        if not target_sites:
+            st.warning("선택된 지역이 없습니다.")
+        else:
+            recent_dates = [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
+            results = []
+            progress_text = st.empty()
+            bar = st.progress(0)
+            
+            for i, (name, url) in enumerate(target_sites):
+                progress_text.text(f"확인 중: {name} ({i+1}/{len(target_sites)})")
+                results.append(check_site_stable(name, url, recent_dates))
+                bar.progress((i + 1) / len(target_sites))
+                time.sleep(0.05)
 
-    st.markdown("---")
-    st.subheader("📢 게시판으로 이동해서 직접 검색하세요")
-    m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
-    m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
-    st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
+            df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
+            df['링크'] = df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
+            st.success("자동 검사 완료!")
+            st.write(df.to_html(escape=False), unsafe_allow_html=True)
+
+st.markdown("---")
+st.subheader(f"📢 직접 확인 리스트 ({len(manual_sites)}개 지역)")
+m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
+m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동 후 \'교섭\' 검색</a>')
+st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
 
 
 
