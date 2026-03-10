@@ -65,18 +65,15 @@ target_sites = [
 #    ["경남_의령", "https://www.uiryeong.go.kr/board/list.uiryeong?boardId=BBS_0000070&menuCd=DOM_000000203003001001&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
 #    ["경남_창원", "https://www.changwon.go.kr/cwportal/10310/10438/10439.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
 #    ["경남_함안", "https://www.haman.go.kr/00960/00962.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
-     ["충청남도청", "https://www.chungnam.go.kr/cnportal/province/province/list.do?menuNo=500487&pageIndex=1&cl1CdValue=&sdate=2025-03-10&edate=2026-03-10&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD&pageUnit=10"],
-    ["충남_아산", "https://www.asan.go.kr/main/cms/?no=257"],
-    ["충남_서산", "https://www.seosan.go.kr/www/contents.do?key=1258"],
-    ["충남_논산", "https://nonsan.go.kr/kor/html/sub03/03010201.html"],
-    ["경상북도", "https://www.gb.go.kr/Main/page.do?bdName=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&mnu_uid=6789&CSRF_TOKEN=&p1=0&p2=0&dept_name=&dept_code=&BD_CODE=gosi_notice&B_START=2026-01-10&B_END=2026-03-10&key=2&word=%EA%B5%90%EC%84%AD"],
-    ["경북_포항", "https://www.pohang.go.kr/portal/saeol/gosi/list.do?mid=0202010000"],
-    ["경북_경주", "https://www.gyeongju.go.kr/open_content/ko/page.do"],
+#     ["충청남도", "https://www.chungnam.go.kr/cnportal/province/province/list.do?menuNo=500487&pageIndex=1&cl1CdValue=&sdate=2025-03-10&edate=2026-03-10&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD&pageUnit=10"],
+#    ["충남_아산", "https://www.asan.go.kr/main/cms/?no=257"],
+#    ["충남_서산", "https://www.seosan.go.kr/www/contents.do?key=1258"],
+#    ["충남_논산", "https://nonsan.go.kr/kor/html/sub03/03010201.html"],
+#    ["경상북도", "https://www.gb.go.kr/Main/page.do?bdName=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&mnu_uid=6789&CSRF_TOKEN=&p1=0&p2=0&dept_name=&dept_code=&BD_CODE=gosi_notice&B_START=2026-01-10&B_END=2026-03-10&key=2&word=%EA%B5%90%EC%84%AD"],
     ["경북_김천", "https://www.gc.go.kr/portal/saeol/gosi/list.do?mId=1202180100"],
     ["경북_안동", "https://www.andong.go.kr/portal/saeol/gosi/list.do?mId=0401020100"],
     ["경북_구미", "https://www.gumi.go.kr/portal/saeol/gosi/list.do?seCode=01&mid=0401040000"],
-    ["경북_경산", "https://www.gbgs.go.kr/open_content/ko/page.do"],
-    ["경북_칠곡", "https://www.chilgok.go.kr/portal/saeol/gosi/list.do?mId=0201030000"],
+#    ["경북_칠곡", "https://www.chilgok.go.kr/portal/saeol/gosi/list.do?mId=0201030000"],
 ]
 
 # 2. 직접 확인 필요 리스트 (분류 완료)
@@ -104,7 +101,9 @@ manual_sites = [
     ["경기_광주", "https://www.gjcity.go.kr/portal/saeol/gosi/list.do?mId=0202010000"],
     ["경기_남양주", "https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492"],
     ["경기_평택", "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosi/list.do?mid=0401020100"],
-    ["경상북도", "https://www.gb.go.kr/Main/page.do?bdName=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&mnu_uid=6789&CSRF_TOKEN=&p1=0&p2=0&dept_name=&dept_code=&BD_CODE=gosi_notice&B_START=2026-01-09&B_END=2026-03-09&key=2&word=%EA%B5%90%EC%84%AD"],    
+    ["경북_경주", "https://www.gyeongju.go.kr/open_content/ko/page.do?mnu_uid=423"],
+    ["경북_경산", "https://www.gbgs.go.kr/open_content/ko/page.do?mnu_uid=2160&"],    
+    ["경북_포항", "https://www.pohang.go.kr/portal/saeol/gosi/list.do?mid=0202010000"],    
     ["경상남도", "https://www.gyeongnam.go.kr/index.gyeong?menuCd=DOM_000000135003009001"],
     ["충남_공주", "https://www.gongju.go.kr/prog/saeolGosi/GOSI_01/sub04_03_01/list.do"],
     ["충남_당진", "https://www.dangjin.go.kr/kor/sub03_02_01_01.do"],    
@@ -126,32 +125,34 @@ def check_site_stable(name, url, recent_dates):
     headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
     try:
         session = requests.Session()
-        response = session.get(url, headers=headers, timeout=25, verify=False, allow_redirects=True)
+        response = session.get(url, headers=headers, timeout=20, verify=False, allow_redirects=True)
         response.encoding = response.apparent_encoding 
         content = response.text
         
-        # [수정] 너무 정교하게 자르려다 놓치는 경우를 방지하기 위해 
-        # 노이즈(메뉴, 푸터 등)만 제거하고 본문 전체를 봅니다.
+        # 스크립트 등 노이즈 제거
         main_content = re.sub(r'<script.*?</script>|<style.*?</style>|<header.*?</header>|<footer.*?</footer>|<nav.*?</nav>', '', content, flags=re.DOTALL)
         
-        # 1. '결과 없음' 지표 체크 (이 문구가 있으면 무조건 결과 없음)
-        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건</span>', '0건</td>', '>0건<', '검색결과가 없습니다', '검색결과 0건']
+        # 1. 결과 없음 지표 체크 (새올 시스템 전용 문구 추가)
+        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건</span>', '0건</td>', '>0건<', '검색결과가 없습니다', '검색결과 0건', '해당하는 내역이 없습니다']
         if any(indicator in main_content for indicator in fail_indicators):
             return [name, url, "⚪ 결과 없음"]
 
-        # 2. 신규 공고 판독 (교섭 단어 근처에 최근 날짜가 있는지)
+        # 2. 신규 공고 판독 (김천, 안동, 구미 등의 날짜 형식 대응)
         for date in recent_dates:
-            # 날짜 형식 유연화 (YYYY-MM-DD, YY.MM.DD 등)
-            short_date = date[2:].replace('-', '.') if len(date) > 8 else date
-            hyphen_date = date
+            # 다양한 날짜 형식 생성 (2024-03-21, 2024.03.21, 24.03.21 등)
+            dot_date = date.replace('-', '.')
+            short_dot_date = dot_date[2:]
             
-            # 패턴: 교섭 글자 주변 150자 이내에 오늘/최근 날짜가 보이면 신규
-            pattern = f"교섭.{{0,150}}({hyphen_date}|{short_date})|({hyphen_date}|{short_date}).{{0,150}}교섭"
-            if re.search(pattern, main_content, re.DOTALL):
+            # 교섭 단어와 날짜가 근접(200자)하게 있는지 검사
+            patterns = [
+                f"교섭.{{0,200}}({date}|{dot_date}|{short_dot_date})",
+                f"({date}|{dot_date}|{short_dot_date}).{{0,200}}교섭"
+            ]
+            
+            if any(re.search(p, main_content, re.DOTALL) for p in patterns):
                 return [name, url, "🔴 신규 가능성 높음"]
 
         # 3. 기존 공고 판독
-        # '결과 없음' 문구는 없는데 '교섭' 단어가 본문에 들어있다면 존재로 판단
         if "교섭" in main_content:
             return [name, url, "🟡 기존 공고 존재"]
 
@@ -183,6 +184,7 @@ if st.button("🚀 공고 확인 시작"):
     m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
     m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
     st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
+
 
 
 
