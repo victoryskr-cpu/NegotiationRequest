@@ -94,71 +94,32 @@ raw_target_data = {
     ]
 }
 
-# 2. 수동 확인 데이터 (누락 없이 전원 복구 및 가나다 정렬)
-raw_manual_data = [
-    ["보건복지부", "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003"],
-    ["강북구청", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082"],
-    ["관악구청", "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/List.do?typeCode=1&searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
-    ["서대문구청", "https://www.sdm.go.kr/news/notice/notice.do?mode=list&srchTitle=%EA%B5%90%EC%84%AD"],
-    ["송파구청", "https://www.songpa.go.kr/www/selectGosiList.do?key=2776&not_ancmt_se_code=&searchCnd=SJ&searchKrwd=교섭"],
-    ["양천구청", "https://www.yangcheon.go.kr/site/yangcheon/ex/bbs/List.do?cbIdx=254#"],
-    ["종로구청", "https://www.jongno.go.kr/portal/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000271&menuNo=1756&menuId=1756"],
-    ["중구청", "https://www.junggu.seoul.kr/content/boards/62/list?search_column=title&search_keyword=교섭"],
-    ["부산_사상구", "https://www.sasang.go.kr/tour/board/list.sasang?boardId=BBS_0000001&menuIdx=75&searchCnd=0&searchWrd=%EA%B5%90%EC%84%AD"],
-    ["대구광역시", "https://www.daegu.go.kr/index.do?menu_id=00000052&srchVal=%EA%B5%90%EC%84%AD&srchKey=sj"],
-    ["대구_남구", "https://nam.daegu.kr/index.do?menu_id=00000851"],
-    ["울산광역시", "https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan?mId=001004002000000000"],
-    ["울산_남구", "https://www.ulsannamgu.go.kr/cop/bbs/selectSaeolGosiList.do"],
-    ["울산_동구", "https://www.donggu.ulsan.kr/donggu/contents/contents.do?mId=4040100"],
-    ["울산_북구", "https://www.bukgu.ulsan.kr/lay1/S1T86C456/contents.do"],
-    ["울산_울주군", "https://www.ulju.ulsan.kr/ulju/saeol/gosi/list.do?mId=0403010000"],
-    ["울산_중구", "https://www.junggu.ulsan.kr/index.ulsan?menuCd=DOM_000000102004001000"],
-    ["경기도", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547"],
-    ["경기_구리", "https://www.guri.go.kr/www/selectGosiNttList.do?key=387&searchCnd=ALL&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["경기_고양", "https://www.goyang.go.kr/www/link/BD_notice.do?se=01"],
-    ["경기_광주", "https://www.gjcity.go.kr/portal/saeol/gosi/list.do?mId=0202010000"],
-    ["경기_남양주", "https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492"],
-    ["경기_평택", "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosi/list.do?mid=0401020100"],
-    ["경북_경주", "https://www.gyeongju.go.kr/open_content/ko/page.do?mnu_uid=423"],
-    ["경북_경산", "https://www.gbgs.go.kr/open_content/ko/page.do?mnu_uid=2160&"],
-    ["경북_김천", "https://www.gc.go.kr/portal/saeol/gosi/list.do?mId=1202180100"],
-    ["경북_안동", "https://www.andong.go.kr/portal/saeol/gosi/list.do?mId=0401010000"],
-    ["경북_구미", "https://www.gumi.go.kr/portal/saeol/gosi/list.do?seCode=01&mid=0401040000"],
-    ["경북_포항", "https://www.pohang.go.kr/portal/saeol/gosi/list.do?mid=0202010000"],
-    ["경상남도", "https://www.gyeongnam.go.kr/index.gyeong?menuCd=DOM_000000135003009001"],
-    ["충남_공주", "https://www.gongju.go.kr/prog/saeolGosi/GOSI_01/sub04_03_01/list.do"],
-    ["충남_당진", "https://www.dangjin.go.kr/kor/sub03_02_01_01.do"],
-    ["충남_천안", "https://www.cheonan.go.kr/kor/sub02_02_01.do"],
-    ["충청북도", "https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["충북_단양", "https://www.danyang.go.kr/dy21/976"],
-    ["충북_영동", "https://www.yd21.go.kr/kr/html/sub02/020103.html?mode=L"],
-    ["충북_증평", "http://www.jp.go.kr/kor/sub03_01_03.do"],
-    ["충북_청주", "https://www.cheongju.go.kr/www/selectEminwonNoticeList.do?key=281&searchKrwd=%EA%B5%90%EC%84%AD"],
-    ["충북_충주", "https://www.chungju.go.kr/www/selectEminwonList.do?key=510&ancmt_sj=%EA%B5%90%EC%84%AD"]
-]
-
-# 가나다순 정렬 자동 처리
+# 가나다순 정렬 및 데이터 가공
 target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
-manual_sites = sorted(raw_manual_data, key=lambda x: x[0])
 
 # 사이드바 설정
 st.sidebar.header("📍 검색 지역 설정")
-all_regions = list(target_data.keys())
-selected_regions = []
 
-if st.sidebar.checkbox("전체 지역 선택", value=True):
-    selected_regions = all_regions
-else:
-    for region in all_regions:
-        if target_data[region]: # 데이터가 있는 경우만 체크박스
-            if st.sidebar.checkbox(region, value=False):
-                selected_regions.append(region)
+# 전체 선택/해제 로직
+select_all = st.sidebar.checkbox("전체 지역 선택", value=False)
+
+selected_regions = []
+for region in target_data.keys():
+    # 광역명 옆에 데이터 개수 표시 (예: 서울특별시 (17))
+    count = len(target_data[region])
+    label = f"{region} ({count})"
+    
+    # 전체 선택이 체크되어 있으면 각 항목도 체크, 아니면 개별 선택
+    is_checked = st.sidebar.checkbox(label, value=select_all)
+    if is_checked and count > 0:
+        selected_regions.append(region)
 
 # 실행용 타겟 리스트 구성
 target_sites = []
 for reg in selected_regions:
     target_sites.extend(target_data[reg])
 
+# [기존 check_site_stable 함수 및 결과 출력 로직 동일]
 def check_site_stable(name, url, recent_dates):
     headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
     try:
@@ -190,7 +151,7 @@ col1, col2, col3 = st.columns([1,2,1])
 with col2:
     if st.button("🚀 선택 지역 공고 확인 시작"):
         if not target_sites:
-            st.warning("선택된 지역이 없습니다.")
+            st.warning("선택된 지역이 없습니다. 사이드바에서 지역을 선택해주세요.")
         else:
             recent_dates = [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
             results = []
@@ -205,75 +166,5 @@ with col2:
 
             df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
             df['링크'] = df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
-            st.success("자동 검사 완료!")
+            st.success(f"총 {len(target_sites)}개 사이트 검사 완료!")
             st.write(df.to_html(escape=False), unsafe_allow_html=True)
-
-st.markdown("---")
-st.subheader(f"📢 직접 확인 리스트 ({len(manual_sites)}개 지역)")
-m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
-m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동 후 \'교섭\' 검색</a>')
-st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
