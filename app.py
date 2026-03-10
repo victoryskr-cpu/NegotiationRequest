@@ -15,55 +15,40 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* 제목 및 텍스트 레이아웃 */
-    .header-container { text-align: center; margin-top: -20px; margin-bottom: 10px; }
-    .main-title { font-size: 1.8rem; font-weight: bold; margin-bottom: 5px; }
-    .sub-title { font-size: 1.5rem; color: #444; font-weight: 500; }
-    .status-text { font-weight: bold; color: #ff4b4b; display: block; text-align: center; margin-bottom: 10px; }
-    <div style="text-align: center;">
-        <h1 style="margin-bottom: 0px;">지자체 교섭요구공고 확인</h1>
-        <p style="font-size: 34px; font-weight: bold; color: #555; margin-top: 5px;">
-            (돌봄사업장 지역 공고 모니터링)
-        </p>
-    </div>
-    
-    /* 버튼 중앙 정렬 및 파란색 강조 스타일 */
-    .stButton {
-        display: flex;
-        justify-content: center;
-        margin: 20px 0;
-    }
-    
-    .stButton>button {
-        width: 320px !important; /* 버튼 너비 */
-        background-color: #007BFF !important; /* 선명한 파란색 */
-        color: white !important; /* 글자색 흰색 */
-        border-radius: 12px;
-        min-height: 3.8em;
-        font-weight: 900 !important; /* 아주 굵게 */
-        font-size: 1.15rem !important; /* 글자 크기 키움 */
-        border: none;
-        box-shadow: 0px 4px 15px rgba(0, 123, 255, 0.3); /* 파란색 그림자 효과 */
-        transition: all 0.3s ease;
-    }
-
-    /* 마우스 올렸을 때 효과 */
-    .stButton>button:hover {
-        background-color: #0056b3 !important;
-        transform: translateY(-2px); /* 살짝 위로 뜨는 효과 */
-        box-shadow: 0px 6px 20px rgba(0, 123, 255, 0.4);
-    }
-
-    /* 안내 박스 스타일 */
-    .guide-box { 
-        background-color: #f0f2f6; padding: 15px; border-radius: 10px; text-align: center; 
-        border: 1px dashed #ff4b4b; margin-bottom: 20px; font-weight: bold; color: #ff4b4b;
-    }
+        /* 전체 컨테이너 정렬 */
+        .header-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        /* 메인 제목: 지자체 교섭요구공고 확인 */
+        .main-title {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin-bottom: 0px;
+            padding-bottom: 0px;
+        }
+        /* 부제: (돌봄사업장 지역 공고 모니터링) - 34px 설정 */
+        .sub-title {
+            font-size: 34px;
+            font-weight: bold;
+            color: #555;
+            margin-top: 5px;   /* 제목과의 간격 */
+            margin-bottom: 30px;
+        }
+        /* 안내 문구: 왼쪽 상단 화살표... */
+        .status-text {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff4b4b;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
     </style>
-    
+
     <div class="header-container">
-        <h1 class="main-title">지자체 교섭요구공고 확인</h1>
-        <p class="sub-title">(돌봄 지자체 교섭요구 공고 모니터링)</p>
+        <div class="main-title">지자체 교섭요구공고 확인</div>
+        <div class="sub-title">(돌봄 지자체 교섭요구 공고 모니터링)</div>
+        <div class="status-text">왼쪽 상단 [ > ] 화살표 눌러 지역 선택!</div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -265,6 +250,7 @@ st.markdown(f"""
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
 st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
