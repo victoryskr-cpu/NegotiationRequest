@@ -340,6 +340,29 @@ def extract_date_from_text(text: str):
 
     return ""
 
+def extract_date_from_item(item: dict):
+
+    priority_keys = [
+        "regDt", "regdate", "date", "createdAt",
+        "frstRegDt", "inputDate", "writeDate",
+        "crtDt", "updDt", "bbscttRegistDe"
+    ]
+
+    for key in priority_keys:
+        value = item.get(key)
+        if isinstance(value, str):
+            detected = extract_date_from_text(value)
+            if detected:
+                return detected
+
+    for value in item.values():
+        if isinstance(value, str):
+            detected = extract_date_from_text(value)
+            if detected:
+                return detected
+
+    return ""
+
 def looks_like_noise(line: str):
     noise_patterns = [
         r"페이지[: ]",
@@ -528,12 +551,7 @@ def check_gyeonggi(name: str, url: str):
         for item in items:
             for value in item.values():
                 if isinstance(value, str) and "교섭" in value:
-                    date = (
-                        item.get("regDt")
-                        or item.get("regdate")
-                        or item.get("date")
-                        or item.get("createdAt")
-                        or ""
+                    date = extract_date_from_item(item)
                     )
                     return make_result(name, url, "🟡 기존 공고", date, value[:120])
 
@@ -830,6 +848,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
