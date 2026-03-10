@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 import time
 import re
 from io import BytesIO
@@ -95,18 +96,28 @@ st.markdown("""
     table {
         width: 100%;
         border-collapse: collapse;
+        table-layout: fixed;
     }
 
     th {
         text-align: center !important;
         background-color: #f8f9fa;
+        padding: 10px 8px;
     }
 
     td {
         text-align: center !important;
         vertical-align: middle;
+        padding: 10px 8px;
+        word-break: break-word;
     }
-    </style>
+
+    /* 자동검색 결과 표 폭 */
+    .result-table th:nth-child(1), .result-table td:nth-child(1) { width: 160px; } 
+    .result-table th:nth-child(2), .result-table td:nth-child(2) { width: 140px; } 
+    .result-table th:nth-child(3), .result-table td:nth-child(3) { width: 160px; } 
+    .result-table th:nth-child(4), .result-table td:nth-child(4) { width: 150px; } 
+    .result-table th:nth-child(5), .result-table td:nth-child(5) { width: auto; }    </style>
 
     <div class="header-container">
         <h1 class="main-title">지자체 교섭요구공고 확인</h1>
@@ -254,16 +265,19 @@ def create_session():
     session.headers.update(SESSION_HEADERS)
     return session
 
-def extract_clean_text(html: str) -> str:
+def extract_text_lines(html: str):
     soup = BeautifulSoup(html, "html.parser")
+
     for tag in soup(["script", "style", "noscript"]):
         tag.decompose()
-    text = soup.get_text(" ", strip=True)
-    text = re.sub(r"\s+", " ", text)
-    return text
 
-def build_recent_day_patterns(days: int = 8):
-    today = datetime.now()
+    text = soup.get_text("\n", strip=True)
+    lines = [re.sub(r"\s+", " ", line).strip() for line in text.splitlines()]
+    lines = [line for line in lines if line]
+    return lines
+
+def build_recent_day_patterns(days: int = 7):
+    today = datetime.now(ZoneInfo("Asia/Seoul"))
     patterns = []
 
     for i in range(days):
@@ -272,9 +286,6 @@ def build_recent_day_patterns(days: int = 8):
             dt.strftime("%Y-%m-%d"),
             dt.strftime("%Y.%m.%d"),
             dt.strftime("%Y/%m/%d"),
-            dt.strftime("%m.%d"),
-            dt.strftime("%m-%d"),
-            dt.strftime("%m/%d"),
             dt.strftime("%y-%m-%d"),
             dt.strftime("%y.%m.%d"),
             dt.strftime("%y/%m/%d"),
@@ -282,80 +293,93 @@ def build_recent_day_patterns(days: int = 8):
 
     return list(dict.fromkeys(patterns))
 
-def classify_status_from_text(clean_text: str, keyword: str = "교섭", recent_days: int = 8):
-    if keyword not in clean_text:
-        return "⚪ 결과 없음", "", ""
+def looks_like_noise(line: str):
+    noise_patterns = [
+        r"페이지[: ]",
+        r"전체페이지",
+        r"RSS",
+        r"더보기",
+        r"이동",
+        r"검색",
+        r"담당부서",
+        r"조회",
+        r"번호",
+        r"목록",
+        r"처음",
+        r"다음",
+        r"이전",
+        r"마지막",
+        r"1 10 20 30 40 50",
+        r"새올",
+        r"행정지원과",
+    ]
+    return any(re.search(p, line) for p in noise_patterns)
 
+def clean_title(line: str):
+    line = re.sub(r"\s+", " ", line).strip()
+    line = re.sub(r"^\d+\s*", "", line)
+    return line[:120]
+
+def classify_status_from_lines(lines, keyword: str = "교섭", recent_days: int = 7):
     recent_day_patterns = build_recent_day_patterns(recent_days)
 
-    for match in re.finditer(keyword, clean_text):
-        start = max(0, match.start() - 100)
-        end = min(len(clean_text), match.end() + 100)
-        context = clean_text[start:end]
+    keyword_lines = []
+    for i, line in enumerate(lines):
+        if keyword in line and not looks_like_noise(line):
+            keyword_lines.append((i, line))
 
-        compact_context = context.replace(" ", "")
-        compact_context2 = re.sub(r"[./-]", "", compact_context)
+    if not keyword_lines:
+        return "⚪ 결과 없음", "", ""
+
+    first_title = clean_title(keyword_lines[0][1])
+
+    for idx, line in keyword_lines:
+        near_lines = lines[max(0, idx - 1): min(len(lines), idx + 2)]
+        joined = " ".join(near_lines)
 
         for day in recent_day_patterns:
-            day_compact = re.sub(r"[./-]", "", day)
-            if day in context or day_compact in compact_context2:
-                return "🔴 신규 가능성 높음", day, context
+            if day in joined:
+                return "🔴 신규", day, clean_title(line)
 
-    first_context = ""
-    first_match = re.search(keyword, clean_text)
-    if first_match:
-        start = max(0, first_match.start() - 100)
-        end = min(len(clean_text), first_match.end() + 100)
-        first_context = clean_text[start:end]
-
-    return "🟡 기존 공고 존재", "", first_context
+    return "🟡 기존 공고", "", first_title
 
 @st.cache_data(ttl=600, show_spinner=False)
 def check_site_stable(name: str, url: str):
-    checked_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     session = create_session()
 
     try:
         response = session.get(url, timeout=15)
-        status_code = response.status_code
         response.raise_for_status()
-
         response.encoding = response.apparent_encoding or response.encoding
-        clean_text = extract_clean_text(response.text)
 
-        status, detected_date, detected_context = classify_status_from_text(clean_text)
+        lines = extract_text_lines(response.text)
+        status, detected_date, detected_title = classify_status_from_lines(lines)
 
         return {
             "지자체명": name,
             "링크": url,
             "상태": status,
-            "응답코드": status_code,
             "감지일자": detected_date,
-            "확인시각": checked_at,
-            "감지문맥": detected_context
+            "감지제목": detected_title
         }
 
     except requests.exceptions.Timeout:
         return {
             "지자체명": name,
             "링크": url,
-            "상태": "⚠️ 타임아웃",
-            "응답코드": "",
+            "상태": "⚠️ 접속오류",
             "감지일자": "",
-            "확인시각": checked_at,
-            "감지문맥": ""
+            "감지제목": ""
         }
 
-    except requests.exceptions.HTTPError as e:
-        status_code = e.response.status_code if e.response is not None else ""
+    except requests.exceptions.HTTPError:
         return {
             "지자체명": name,
             "링크": url,
-            "상태": "⚠️ HTTP 오류",
-            "응답코드": status_code,
+            "상태": "⚠️ 접속 오류",
             "감지일자": "",
             "확인시각": checked_at,
-            "감지문맥": ""
+            "감지제목": ""
         }
 
     except requests.exceptions.RequestException:
@@ -363,10 +387,9 @@ def check_site_stable(name: str, url: str):
             "지자체명": name,
             "링크": url,
             "상태": "⚠️ 요청 실패",
-            "응답코드": "",
             "감지일자": "",
             "확인시각": checked_at,
-            "감지문맥": ""
+            "감지제목": ""
         }
 
     except Exception:
@@ -374,10 +397,9 @@ def check_site_stable(name: str, url: str):
             "지자체명": name,
             "링크": url,
             "상태": "⚠️ 파싱 오류",
-            "응답코드": "",
             "감지일자": "",
             "확인시각": checked_at,
-            "감지문맥": ""
+            "감지제목": ""
         }
 
 def extract_href_for_excel(value):
@@ -420,12 +442,10 @@ def to_excel(df: pd.DataFrame):
 
         col_widths = {
             "지자체명": 18,
-            "링크": 45,
-            "상태": 20,
-            "응답코드": 10,
+            "링크": 18,
+            "상태": 16,
             "감지일자": 14,
-            "확인시각": 22,
-            "감지문맥": 60
+            "감지제목": 70
         }
 
         for idx, col in enumerate(df_excel.columns):
@@ -528,12 +548,14 @@ if run_clicked:
         st.download_button(
             label="📥 결과 엑셀 내려받기",
             data=to_excel(df),
-            file_name=f"교섭결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx",
+            file_name=f"교섭결과_{datetime.now(ZoneInfo('Asia/Seoul')).strftime('%m%d_%H%M')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-        st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
-
+        st.write(
+            df_display.to_html(escape=False, index=False, classes="result-table"),
+            unsafe_allow_html=True
+        )
 
 # -------------------------------------------------
 # 직접 확인 리스트 (지역별 접기)
