@@ -115,9 +115,6 @@ manual_sites = [
 def get_recent_dates():
     return [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
 
-def get_recent_dates():
-    return [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
-
 def check_site_stable(name, url, recent_dates):
     headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
     try:
@@ -125,21 +122,29 @@ def check_site_stable(name, url, recent_dates):
         response.encoding = response.apparent_encoding 
         content = response.text
         
-        # [교정] 노이즈 제거 범위를 더 넓힘 (사이드바, 네비게이션 단어 제외)
-        clean_text = re.sub(r'<script.*?</script>|<style.*?</style>|<header.*?</header>|<footer.*?</footer>|<nav.*?</nav>', '', content, flags=re.DOTALL)
+        # [핵심 수정] 게시물 리스트가 위치하는 핵심 영역만 추출 (id/class가 contents, board_list 등인 곳)
+        # 이 작업이 수행되어야 푸터나 사이드바에 있는 '교섭' 단어에 낚이지 않습니다.
+        main_content = ""
+        main_match = re.search(r'<(?:div|section|tbody|table)[^>]*(?:id|class)=["\'](?:contents|board_list|list|table)[^>]*>(.*?)</(?:div|section|tbody|table)>', content, re.DOTALL | re.IGNORECASE)
         
-        # 1. [함안군 대응] 결과 없음 문구를 최우선으로 체크하여 오탐 방지
-        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건']
-        if any(indicator in clean_text for indicator in fail_indicators):
+        if main_match:
+            main_content = main_match.group(1)
+        else:
+            # 영역 추출 실패 시 노이즈(메뉴, 푸터)를 최대한 제거한 텍스트 사용
+            main_content = re.sub(r'<script.*?</script>|<style.*?</style>|<header.*?</header>|<footer.*?</footer>|<nav.*?</nav>', '', content, flags=re.DOTALL)
+        
+        # 1. '결과 없음' 지표 체크 (오탐 방지 최우선 순위)
+        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건</span>', '0건</td>', '>0건<']
+        if any(indicator in main_content for indicator in fail_indicators):
             return [name, url, "⚪ 결과 없음"]
 
         # 2. 신규 공고 (날짜+교섭 조합)
-        has_recent = any(date in clean_text for date in recent_dates)
-        if "교섭" in clean_text and has_recent:
+        has_recent = any(date in main_content for date in recent_dates)
+        if "교섭" in main_content and has_recent:
             return [name, url, "🔴 신규 가능성 높음"]
 
-        # 3. 기존 공고 (날짜 양식 + 교섭)
-        if "교섭" in clean_text and re.search(r'\d{2,4}[-.]\d{2}[-.]\d{2}', clean_text):
+        # 3. 기존 공고 (날짜 양식 + 교섭 키워드 존재)
+        if "교섭" in main_content and re.search(r'\d{2,4}[-.]\d{2}[-.]\d{2}', main_content):
             return [name, url, "🟡 기존 공고 존재"]
 
         return [name, url, "⚪ 결과 없음"]
@@ -170,6 +175,7 @@ if st.button("🚀 공고 확인 시작"):
     m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
     m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
     st.write(m_df.to_html(escape=False), unsafe_allow_html=True)
+
 
 
 
