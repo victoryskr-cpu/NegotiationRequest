@@ -139,43 +139,54 @@ def check_site_stable(name, url, recent_dates):
     }
     
     try:
-        response = requests.get(url, headers=headers, timeout=25, verify=False)
+        # 경기도/구리 등 접속 지연 대비 timeout 상향
+        response = requests.get(url, headers=headers, timeout=30, verify=False)
         response.encoding = 'utf-8'
         content = response.text
 
-        # 1. '결과 없음'을 의미하는 텍스트 감지 (가장 확실한 지표)
+        # 1. '결과 없음' 명시적 지표 확인 (양주시 오탐지 방지용 강화)
+        # 검색 결과가 없을 때만 나타나는 특정 문구들
         fail_indicators = [
             '검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', 
-            '데이터가 없습니다', '검색결과가 없습니다', '0건</span>'
+            '데이터가 없습니다', '검색결과가 없습니다', '>0건<', '총 0건'
         ]
+        
+        # 양주시 등에서 '교섭' 단어가 메뉴에 포함되어 있어도, 아래 문구가 있으면 즉시 '결과 없음'
         if any(indicator in content for indicator in fail_indicators):
             return [name, url, "⚪ 결과 없음"]
 
-        # 2. 본문 내용 영역 추출 (충북 음성 오판독 방지)
-        # 대부분의 지자체는 tbody 혹은 특정 contents 영역에 게시물이 들어감
-        content_area = ""
+        # 2. 본문 영역 추출 시도 (실패 시 전체 본문 사용)
+        # 경기도, 구리의 경우 tbody 추출이 안 될 수 있어 범위를 넓게 잡음
+        search_area = ""
         body_match = re.search(r'<tbody>(.*?)</tbody>', content, re.DOTALL)
+        content_match = re.search(r'id="contents"(.*?)</div>', content, re.DOTALL) # 일반적인 콘텐츠 영역
+        
         if body_match:
-            content_area = body_match.group(1)
+            search_area = body_match.group(1)
+        elif content_match:
+            search_area = content_match.group(1)
         else:
-            # 경기도 등 tbody를 안 쓰는 경우 contents div 탐색
-            div_match = re.search(r'id="contents"(.*?)</div>', content, re.DOTALL)
-            if div_match:
-                content_area = div_match.group(1)
-            else:
-                content_area = content # 최후의 수단
+            # 리스트 테이블 형식이 깨진 경우, 스크립트/메뉴 영역을 제외한 본문 위주 탐색
+            search_area = re.sub(r'<script.*?</script>', '', content, flags=re.DOTALL)
+            search_area = re.sub(r'<header.*?</header>', '', search_area, flags=re.DOTALL)
 
-        # 3. 실제 유효 결과 판독
-        if "교섭" in content_area:
-            # 최근 7일 이내 날짜 포함 여부
-            has_recent_date = any(date in content_area for date in recent_dates)
-            return [name, url, "🔴 신규 가능성 높음" if has_recent_date else "🟡 기존 공고 존재"]
+        # 3. 실제 결과 판독
+        # '교섭' 단어가 존재하고, 그것이 메뉴가 아닌 실제 리스트인지 확인하기 위해 
+        # 리스트에 흔히 붙는 '2025' 또는 '2026' 연도 데이터가 근처에 있는지 확인
+        if "교섭" in search_area:
+            # 날짜 패턴 (0000-00-00 또는 00.00.00)
+            date_pattern = r'\d{4}[-.]\d{2}[-.]\d{2}'
+            has_date = re.search(date_pattern, search_area)
+            
+            if has_date:
+                # 최근 7일 이내 날짜 포함 여부
+                has_recent_date = any(date in search_area for date in recent_dates)
+                return [name, url, "🔴 신규 가능성 높음" if has_recent_date else "🟡 기존 공고 존재"]
 
         return [name, url, "⚪ 결과 없음"]
 
     except Exception:
         return [name, url, "⚠️ 직접 확인 요망 (접속 지연/에러)"]
-
 # --- 화면 UI ---
 # st.warning("시스템 호환성을 위해 브라우저 엔진 없이 '직접 데이터 요청' 방식으로 작동합니다.")
 
@@ -214,6 +225,7 @@ if st.button("🚀 공고 확인 시작"):
     # CSV 다운로드 (자동 결과 기준)
     csv = df.to_csv(index=False).encode('utf-8-sig')
     st.download_button("📥 자동 확인 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
