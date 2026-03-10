@@ -256,10 +256,18 @@ if st.button("선택 지역 자동 확인 시작"):
         
         status_placeholder.success(f"✅ 확인 완료! (총 {len(target_sites)}개)")
         
-        # 결과 테이블 및 다운로드 버튼 출력
+        # 결과 테이블 생성
         df = pd.DataFrame(results, columns=["지자체명", "링크", "상태"])
         df_display = df.copy()
         df_display['링크'] = df_display['링크'].apply(lambda x: f'<a href="{x}" target="_blank">게시판 이동</a>')
         
+        # 엑셀 다운로드 버튼 (괄호 닫힘 확인!)
         st.download_button(
-            label="📥 결과 엑셀 내려받기",
+            label="📥 결과 엑셀 내려받기", 
+            data=to_excel(df), 
+            file_name=f"교섭결과_{datetime.now().strftime('%m%d_%H%M')}.xlsx", 
+            mime="application/vnd.ms-excel"
+        ) # <--- 이 괄호가 잘 닫혀있는지 꼭 확인하세요!
+        
+        # 테이블 출력
+        st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
