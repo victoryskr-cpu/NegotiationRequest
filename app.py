@@ -8,7 +8,7 @@ import re
 # 페이지 설정
 st.set_page_config(page_title="교섭공고 알리미", page_icon="🔍")
 
-# CSS 스타일 (가운데 정렬 및 디자인 최적화)
+# 헤더 디자인
 st.markdown("""
     <style>
     .header-container { text-align: center; margin-top: -20px; margin-bottom: 20px; }
@@ -59,14 +59,13 @@ target_sites = [
     ["강원특별자치도", "https://state.gwd.go.kr/portal/bulletin/notification?searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
     ["강원_춘천", "https://www.chuncheon.go.kr/cityhall/administrative-info/notice-info/notice-announcement/?searchCnd=SJ&searchWrd=%EA%B5%90%EC%84%AD"],
     ["전북특별자치도", "https://www.jeonbuk.go.kr/board/list.jeonbuk?boardId=BBS_0000129&menuCd=DOM_000000102002005000&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
-    ["전북_군산", "https://eminwon.gunsan.go.kr/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do?method=selectOfrList&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ["전북_군산", "https://www.gunsan.go.kr/main/m141"],
     ["전북_전주", "https://www.jeonju.go.kr/planweb/board/list.9is?boardUid=9be517a7914528ce01930aa3ddc26cf0&contentUid=ff8080818990c349018b041a879f395a&searchType=dataTitle&keyword=%EA%B5%90%EC%84%AD"],
-    ["경상남도", "https://www.gyeongnam.go.kr/gosi/index.gyeong?menuCd=DOM_000000102001001000&search_key=title&search_val=%EA%B5%90%EC%84%AD"],
+    ["경상남도", "https://www.gyeongnam.go.kr/gosi/index.gyeong?amode=list&search_key=title&search_val=%EA%B5%90%EC%84%AD"],
     ["경남_김해", "https://www.gimhae.go.kr/03360/00023/00029.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
     ["경남_의령", "https://www.uiryeong.go.kr/board/list.uiryeong?boardId=BBS_0000070&menuCd=DOM_000000203003001001&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
     ["경남_창원", "https://www.changwon.go.kr/cwportal/10310/10438/10439.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
-    ["경남_함안", "https://www.haman.go.kr/00960/00962.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],
-#    ["경상북도", "https://www.gb.go.kr/Main/page.do?bdName=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&mnu_uid=6789&CSRF_TOKEN=&p1=0&p2=0&dept_name=&dept_code=&BD_CODE=gosi_notice&B_START=2026-01-09&B_END=2026-03-09&key=2&word=%EA%B5%90%EC%84%AD"],
+    ["경남_함안", "https://www.haman.go.kr/00960/00962.web?stype=title&sstring=%EA%B5%90%EC%84%AD"],#    ["경상북도", "https://www.gb.go.kr/Main/page.do?bdName=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&mnu_uid=6789&CSRF_TOKEN=&p1=0&p2=0&dept_name=&dept_code=&BD_CODE=gosi_notice&B_START=2026-01-09&B_END=2026-03-09&key=2&word=%EA%B5%90%EC%84%AD"],
 #    ["경북_경산", "https://www.gbgs.go.kr/open_content/ko/page.do"],
 #    ["경북_경주", "https://www.gyeongju.go.kr/open_content/ko/page.do"],
 #    ["경북_구미", "https://www.gumi.go.kr/portal/saeol/gosi/list.do?seCode=01&mid=0401040000"],
@@ -116,24 +115,28 @@ manual_sites = [
 def get_recent_dates():
     return [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
 
+def get_recent_dates():
+    return [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
+
 def check_site_stable(name, url, recent_dates):
     headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }
     try:
         response = requests.get(url, headers=headers, timeout=25, verify=False)
         response.encoding = response.apparent_encoding 
         content = response.text
-        # 노이즈 제거
-        clean_text = re.sub(r'<script.*?</script>|<style.*?</style>|<header.*?</header>|<footer.*?</footer>', '', content, flags=re.DOTALL)
         
-        # 1. 신규 공고 (날짜+교섭 조합)
+        # [교정] 노이즈 제거 범위를 더 넓힘 (사이드바, 네비게이션 단어 제외)
+        clean_text = re.sub(r'<script.*?</script>|<style.*?</style>|<header.*?</header>|<footer.*?</footer>|<nav.*?</nav>', '', content, flags=re.DOTALL)
+        
+        # 1. [함안군 대응] 결과 없음 문구를 최우선으로 체크하여 오탐 방지
+        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '데이터가 없습니다', '0건']
+        if any(indicator in clean_text for indicator in fail_indicators):
+            return [name, url, "⚪ 결과 없음"]
+
+        # 2. 신규 공고 (날짜+교섭 조합)
         has_recent = any(date in clean_text for date in recent_dates)
         if "교섭" in clean_text and has_recent:
             return [name, url, "🔴 신규 가능성 높음"]
-
-        # 2. 결과 없음 문구 체크
-        fail_indicators = ['검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', '0건']
-        if any(indicator in clean_text for indicator in fail_indicators):
-            return [name, url, "⚪ 결과 없음"]
 
         # 3. 기존 공고 (날짜 양식 + 교섭)
         if "교섭" in clean_text and re.search(r'\d{2,4}[-.]\d{2}[-.]\d{2}', clean_text):
