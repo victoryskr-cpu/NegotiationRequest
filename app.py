@@ -471,9 +471,10 @@ def check_gyeongnam(name: str, url: str):
 
 def check_gyeonggi(name: str, url: str):
     """
-    경기도 교섭공고 검색 (AJAX API 사용)
-    디버그 버전
+    경기도 게시판 검사 (AJAX API 기반)
+    최근 게시글을 받아 교섭 키워드 탐색
     """
+
     session = create_session()
 
     try:
@@ -483,12 +484,8 @@ def check_gyeonggi(name: str, url: str):
             "bsIdx": "469",
             "bcIdx": "0",
             "menuId": "1547",
-            "isManager": "false",
-            "isCharge": "false",
-            "keyfield": "SUBJECTANDREMARK",
-            "keyword": "교섭",
             "offset": "0",
-            "limit": "10"
+            "limit": "30"
         }
 
         headers = {
@@ -501,17 +498,37 @@ def check_gyeonggi(name: str, url: str):
 
         data = response.json()
 
-        # 디버그용: JSON 구조 확인
-        st.write("경기도 API 응답 키:", list(data.keys()))
-        st.json(data)
+        items = data.get("list") or data.get("rows") or []
 
-        return make_result(name, url, "⚠️ 디버그 확인 필요")
+        if not items:
+            return make_result(name, url, "⚪ 결과 없음")
+
+        for item in items:
+
+            title = (
+                item.get("subject")
+                or item.get("title")
+                or item.get("sj")
+                or ""
+            )
+
+            if "교섭" in title:
+
+                date = (
+                    item.get("regDt")
+                    or item.get("regdate")
+                    or item.get("date")
+                    or ""
+                )
+
+                return make_result(name, url, "🟡 기존 공고", date, title)
+
+        return make_result(name, url, "⚪ 결과 없음")
 
     except requests.exceptions.Timeout:
         return make_result(name, url, "⚠️ 타임아웃")
 
-    except Exception as e:
-        st.write("경기도 디버그 오류:", str(e))
+    except Exception:
         return make_result(name, url, "⚠️ 파싱 오류")
         
 def check_ulsan_metropolitan(name: str, url: str):
@@ -796,6 +813,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
