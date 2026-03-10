@@ -87,6 +87,9 @@ raw_target_data = {
         ["강원특별자치도", "https://state.gwd.go.kr/portal/bulletin/notification?searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
         ["강원_춘천", "https://www.chuncheon.go.kr/cityhall/administrative-info/notice-info/notice-announcement/?searchCnd=SJ&searchWrd=%EA%B5%90%EC%84%AD"]
     ],
+    "경기도": [    
+        ["경기_구리", "https://www.guri.go.kr/www/selectGosiNttList.do?key=387&searchCnd=ALL&searchKrwd=%EA%B5%90%EC%84%AD"],
+    ],        
     "전라북도": [
         ["전북특별자치도", "https://www.jeonbuk.go.kr/board/list.jeonbuk?boardId=BBS_0000129&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
         ["전북_군산", "https://www.gunsan.go.kr/main/m141"],
@@ -138,7 +141,6 @@ manual_data = [
     ["울산_울주군", "https://www.ulju.ulsan.kr/ulju/saeol/gosi/list.do?mId=0403010000"],
     ["울산_중구", "https://www.junggu.ulsan.kr/index.ulsan?menuCd=DOM_000000102004001000"],
     ["경기도", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547"],
-    ["경기_구리", "https://www.guri.go.kr/www/selectGosiNttList.do?key=387&searchCnd=ALL&searchKrwd=%EA%B5%90%EC%84%AD"],
     ["경기_고양", "https://www.goyang.go.kr/www/link/BD_notice.do?se=01"],
     ["경기_광주", "https://www.gjcity.go.kr/portal/saeol/gosi/list.do?mId=0202010000"],
     ["경기_남양주", "https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492"],
@@ -247,6 +249,7 @@ st.markdown(f"""
 m_df = pd.DataFrame(manual_sites, columns=["지자체명", "링크"])
 m_df['링크'] = m_df['링크'].apply(lambda x: f'<a href="{x}" target="_blank">이동하여 검색</a>')
 st.write(m_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
