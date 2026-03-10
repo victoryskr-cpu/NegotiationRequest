@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. CSS 스타일 설정 (버튼 정중앙 배치 및 테이블 중앙 정렬)
+# 2. CSS 스타일 설정 (버튼 정중앙, 테이블 정렬)
 st.markdown("""
     <style>
         .header-container { text-align: center; margin-bottom: 20px; }
@@ -52,7 +52,6 @@ st.markdown("""
         .result-table th { background-color: #f8f9fa; padding: 12px; border: 1px solid #ddd; text-align: center !important; }
         .result-table td { padding: 10px; border: 1px solid #ddd; vertical-align: middle; text-align: center !important; }
         
-        /* 컬럼별 너비 강제 지정 */
         .col-name { width: 20%; }
         .col-link { width: 25%; }
         .col-status { width: 55%; white-space: nowrap; }
@@ -65,7 +64,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# 3. 데이터 설정
+# 3. 데이터 설정 (따옴표 오류 완벽 수정)
 sort_order = ["서울특별시", "부산광역시", "대구광역시", "울산광역시", "강원도", "전라북도", "경상북도", "경상남도", "충청남도", "충청북도"]
 raw_target_data = {
     "서울특별시": [
@@ -76,4 +75,12 @@ raw_target_data = {
         ["서울_구로", "https://www.guro.go.kr/www/selectBbsNttList.do?key=1791&bbsNo=663&searchCnd=SJ&searchKrwd=교섭"],
         ["서울_금천", "https://www.geumcheon.go.kr/portal/tblSeolGosiDetailList.do?key=294&rep=1&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD"],
         ["서울_노원", "https://www.nowon.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1003&q_searchVal=%EA%B5%90%EC%84%AD"],
-        ["서울_도봉", "
+        ["서울_도봉", "https://www.dobong.go.kr/WDB_DEV/gosigong_go/default.asp?strSearchType=1&strSearchKeyword=%EA%B5%90%EC%84%AD"],
+        ["서울_동대문", "https://www.ddm.go.kr/www/selectEminwonWebList.do?key=3291&searchCnd=notAncmtSj&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["서울_동작", "https://www.dongjak.go.kr/portal/bbs/B0001297/list.do?menuNo=201317&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD"],
+        ["서울_마포", "https://www.mapo.go.kr/site/main/nPortal/list?sv=%EA%B5%90%EC%84%AD"],
+        ["서울_성동", "https://www.sd.go.kr/main/selectBbsNttList.do?key=1473&bbsNo=184&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
+        ["서울_성북", "https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchCnd2=notAncmtSj&searchKrwd=교섭"],
+        ["서울_영등포", "https://www.ydp.go.kr/www/selectEminwonList.do?key=2851&searchCnd=B_Subject&searchKrwd=교섭"],
+        ["서울_용산", "https://www.yongsan.go.kr/portal/bbs/B0000095/list.do?menuNo=200233&searchCnd=1&searchWrd=교섭"],
+        ["서울_은평", "
