@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 import re
 from io import BytesIO
@@ -112,12 +113,12 @@ st.markdown("""
         word-break: break-word;
     }
 
-    /* 자동검색 결과 표 폭 */
-    .result-table th:nth-child(1), .result-table td:nth-child(1) { width: 160px; } 
-    .result-table th:nth-child(2), .result-table td:nth-child(2) { width: 140px; } 
-    .result-table th:nth-child(3), .result-table td:nth-child(3) { width: 160px; } 
-    .result-table th:nth-child(4), .result-table td:nth-child(4) { width: 150px; } 
-    .result-table th:nth-child(5), .result-table td:nth-child(5) { width: auto; }    </style>
+    .result-table th:nth-child(1), .result-table td:nth-child(1) { width: 160px; }
+    .result-table th:nth-child(2), .result-table td:nth-child(2) { width: 140px; }
+    .result-table th:nth-child(3), .result-table td:nth-child(3) { width: 160px; }
+    .result-table th:nth-child(4), .result-table td:nth-child(4) { width: 150px; }
+    .result-table th:nth-child(5), .result-table td:nth-child(5) { width: auto; }
+    </style>
 
     <div class="header-container">
         <h1 class="main-title">지자체 교섭요구공고 확인</h1>
@@ -260,6 +261,8 @@ SESSION_HEADERS = {
     )
 }
 
+MAX_WORKERS = 8
+
 def create_session():
     session = requests.Session()
     session.headers.update(SESSION_HEADERS)
@@ -293,6 +296,41 @@ def build_recent_day_patterns(days: int = 7):
 
     return list(dict.fromkeys(patterns))
 
+def normalize_date_string(date_str: str):
+    if not date_str:
+        return ""
+
+    date_str = date_str.strip().replace(".", "-").replace("/", "-")
+    parts = date_str.split("-")
+
+    try:
+        if len(parts[0]) == 2:
+            year = int(parts[0])
+            year += 2000 if year < 70 else 1900
+            return f"{year:04d}-{int(parts[1]):02d}-{int(parts[2]):02d}"
+        elif len(parts[0]) == 4:
+            return f"{int(parts[0]):04d}-{int(parts[1]):02d}-{int(parts[2]):02d}"
+    except Exception:
+        return date_str
+
+    return date_str
+
+def extract_date_from_text(text: str):
+    if not text:
+        return ""
+
+    patterns = [
+        r"\b(20\d{2}[./-]\d{2}[./-]\d{2})\b",
+        r"\b(\d{2}[./-]\d{2}[./-]\d{2})\b",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            return normalize_date_string(match.group(1))
+
+    return ""
+
 def looks_like_noise(line: str):
     noise_patterns = [
         r"페이지[: ]",
@@ -310,8 +348,6 @@ def looks_like_noise(line: str):
         r"이전",
         r"마지막",
         r"1 10 20 30 40 50",
-        r"새올",
-        r"행정지원과",
     ]
     return any(re.search(p, line) for p in noise_patterns)
 
@@ -333,13 +369,29 @@ def classify_status_from_lines(lines, keyword: str = "교섭", recent_days: int 
 
     first_title = clean_title(keyword_lines[0][1])
 
+    # 1차: 신규 판정은 엄격하게 (앞뒤 1줄)
     for idx, line in keyword_lines:
-        near_lines = lines[max(0, idx - 1): min(len(lines), idx + 2)]
-        joined = " ".join(near_lines)
+        near_lines_strict = lines[max(0, idx - 1): min(len(lines), idx + 2)]
+        joined_strict = " ".join(near_lines_strict)
 
         for day in recent_day_patterns:
-            if day in joined:
-                return "🔴 신규", day, clean_title(line)
+            if day in joined_strict:
+                detected_date = extract_date_from_text(joined_strict)
+                return "🔴 신규", detected_date or normalize_date_string(day), clean_title(line)
+
+    # 2차: 감지일자는 조금 넓게 찾기 (앞뒤 5줄)
+    for idx, line in keyword_lines:
+        near_lines_wide = lines[max(0, idx - 5): min(len(lines), idx + 6)]
+        joined_wide = " ".join(near_lines_wide)
+
+        detected_date = extract_date_from_text(joined_wide)
+        if detected_date:
+            return "🟡 기존 공고", detected_date, clean_title(line)
+
+    # 3차: 제목 줄 자체에서 날짜 찾기
+    title_date = extract_date_from_text(first_title)
+    if title_date:
+        return "🟡 기존 공고", title_date, first_title
 
     return "🟡 기존 공고", "", first_title
 
@@ -469,6 +521,10 @@ def group_manual_sites(manual_sites):
 
     return grouped
 
+def sort_results_by_target_order(results, target_sites):
+    order_map = {name: i for i, (name, _) in enumerate(target_sites)}
+    return sorted(results, key=lambda x: order_map.get(x["지자체명"], 999999))
+
 # -------------------------------------------------
 # 사이드바
 # -------------------------------------------------
@@ -520,27 +576,50 @@ if run_clicked:
         st.warning("지역을 먼저 선택해주세요.")
     else:
         results = []
+        total_count = len(target_sites)
+        completed_count = 0
         progress_bar = st.progress(0)
 
-        for i, (name, url) in enumerate(target_sites):
-            percent = int(((i + 1) / len(target_sites)) * 100)
-            status_placeholder.markdown(
-                f"<span class='status-text'>⏳ [{percent}%] 확인 중: {name}</span>",
-                unsafe_allow_html=True
-            )
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            future_map = {
+                executor.submit(check_site_stable, name, url): (name, url)
+                for name, url in target_sites
+            }
 
-            result = check_site_stable(name, url)
-            results.append(result)
+            for future in as_completed(future_map):
+                name, _ = future_map[future]
 
-            progress_bar.progress((i + 1) / len(target_sites))
-            time.sleep(0.05)
+                try:
+                    result = future.result()
+                except Exception:
+                    result = {
+                        "지자체명": name,
+                        "링크": "",
+                        "상태": "⚠️ 실행 오류",
+                        "감지일자": "",
+                        "감지제목": ""
+                    }
+
+                results.append(result)
+                completed_count += 1
+
+                percent = int((completed_count / total_count) * 100)
+                status_placeholder.markdown(
+                    f"<span class='status-text'>⏳ [{percent}%] 총 {total_count}개 중 {completed_count}개 완료</span>",
+                    unsafe_allow_html=True
+                )
+                progress_bar.progress(completed_count / total_count)
+
+        results = sort_results_by_target_order(results, target_sites)
 
         status_placeholder.success(f"✅ 검사 완료! (총 {len(target_sites)}개)")
 
         df = pd.DataFrame(results)
 
         df_display = df.copy()
-        df_display["링크"] = df_display["링크"].apply(lambda x: make_clickable_link(x))
+        df_display["링크"] = df_display["링크"].apply(
+            lambda x: make_clickable_link(x) if x else ""
+        )
 
         st.download_button(
             label="📥 결과 엑셀 내려받기",
@@ -594,4 +673,3 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
-
