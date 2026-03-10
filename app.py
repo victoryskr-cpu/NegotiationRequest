@@ -4,6 +4,7 @@ import requests
 from datetime import datetime, timedelta
 import time
 import re
+from urllib.parse import quote
 
 # 페이지 설정
 st.set_page_config(page_title="교섭공고 알리미", page_icon="🔍")
@@ -140,25 +141,36 @@ def check_site_stable(name, url, recent_dates):
     session = requests.Session()
     
     try:
-        response = session.get(url, headers=headers, timeout=20, verify=False)
+        response = session.get(url, headers=headers, timeout=25, verify=False)
         response.encoding = 'utf-8'
         content = response.text
 
+        # 1차 필터: '결과 없음'을 의미하는 텍스트가 명확히 보이는 경우
         fail_indicators = [
             '검색된 결과가 없습니다', '등록된 게시물이 없습니다', '조회된 내역이 없습니다', 
-            '데이터가 없습니다', '0건', '총 0건', '결과가 없습니다'
+            '데이터가 없습니다', '0건</span>', '검색결과가 없습니다'
         ]
+        
+        # 2차 필터: 리스트 테이블(tbody) 구조 분석
+        body_match = re.search(r'<tbody>(.*?)</tbody>', content, re.DOTALL)
+        
+        if body_match:
+            search_area = body_match.group(1)
+            # '교섭'이라는 단어가 실제 테이블 내에 존재하는지 확인
+            if "교섭" in search_area:
+                # 날짜 매칭 (최근 7일)
+                has_recent_date = any(date in search_area for date in recent_dates)
+                return [name, url, "🔴 신규 가능성 높음" if has_recent_date else "🟡 기존 공고 존재"]
+            
+        # 3차 필터: 특정 사이트(충북 제천 등)는 tbody 외의 구조를 가질 수 있음
         if any(indicator in content for indicator in fail_indicators):
             return [name, url, "⚪ 결과 없음"]
 
-        body_match = re.search(r'<tbody>(.*?)</tbody>', content, re.DOTALL)
-        if body_match:
-            search_area = body_match.group(1)
-            clean_text = re.sub(r'<[^>]+>', '', search_area)
-            if "교섭" in clean_text:
-                has_recent_date = any(date in search_area for date in recent_dates)
-                return [name, url, "🔴 신규 가능성 높음" if has_recent_date else "🟡 기존 공고 존재"]
-        
+        # 4차 필터: '교섭' 단어는 있으나 리스트가 아닌 경우 (예: 검색창의 검색어)
+        # 본문 내 '교섭' 단어 횟수를 세어 리스트 유무 판단 (단순 1개는 검색창 단어일 확률 높음)
+        if content.count("교섭") > 2:
+             return [name, url, "🟡 기존 공고 존재 (검증필요)"]
+
         return [name, url, "⚪ 결과 없음"]
 
     except Exception:
@@ -202,6 +214,7 @@ if st.button("🚀 공고 확인 시작"):
     # CSV 다운로드 (자동 결과 기준)
     csv = df.to_csv(index=False).encode('utf-8-sig')
     st.download_button("📥 자동 확인 결과 CSV 다운로드", csv, "check_result.csv", "text/csv")
+
 
 
 
