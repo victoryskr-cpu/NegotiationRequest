@@ -689,13 +689,13 @@ def check_site_stable(name: str, url: str):
 
         try:
 
-            time.sleep(0.4 * attempt)
+        time.sleep(0.4 * attempt)
 
-            response = session.get(
-                url,
-                timeout=(10,25),
-                allow_redirects=True
-            )
+        response = session.get(
+            url,
+            timeout=(10,25),
+            allow_redirects=True
+        )
         response.raise_for_status()
         response.encoding = response.apparent_encoding or response.encoding
 
@@ -1125,6 +1125,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
