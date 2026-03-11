@@ -5,16 +5,9 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import urljoin
 import re
 from io import BytesIO
-from data_targets import (
-    raw_target_data,
-    manual_data,
-    prepare_first_automation_batch,
-    update_candidate_status,
-    finalize_verified_targets,
-)
-from crawler_site_handlers import run_site_handler
 
 # -------------------------------------------------
 # 기본 설정
@@ -23,7 +16,7 @@ st.set_page_config(
     page_title="교섭공고 알리미",
     page_icon="🔍",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # -------------------------------------------------
@@ -68,7 +61,7 @@ st.markdown("""
         border-radius: 10px !important;
         min-height: 3.5em !important;
         font-weight: 900 !important;
-        font-size: 1.1rem !important;
+        font-size: 1.05rem !important;
         border: none !important;
     }
 
@@ -90,15 +83,19 @@ st.markdown("""
         margin-bottom: 10px;
     }
 
-    .guide-box {
-        background-color: #f0f2f6;
-        padding: 15px;
-        border-radius: 10px;
-        text-align: center;
-        border: 1px dashed #ff4b4b;
+    .selector-box {
+        background-color: #f8f9fa;
+        padding: 16px 18px 10px 18px;
+        border-radius: 12px;
+        border: 1px solid #d9d9d9;
+        margin-top: 10px;
         margin-bottom: 20px;
-        font-weight: bold;
-        color: #ff4b4b;
+    }
+
+    .selector-title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 10px;
     }
 
     table {
@@ -120,11 +117,10 @@ st.markdown("""
         word-break: break-word;
     }
 
-    .result-table th:nth-child(1), .result-table td:nth-child(1) { width: 160px; }
-    .result-table th:nth-child(2), .result-table td:nth-child(2) { width: 140px; }
-    .result-table th:nth-child(3), .result-table td:nth-child(3) { width: 160px; }
-    .result-table th:nth-child(4), .result-table td:nth-child(4) { width: 150px; }
-    .result-table th:nth-child(5), .result-table td:nth-child(5) { width: auto; }
+    .result-table th:nth-child(1), .result-table td:nth-child(1) { width: 180px; }
+    .result-table th:nth-child(2), .result-table td:nth-child(2) { width: 160px; }
+    .result-table th:nth-child(3), .result-table td:nth-child(3) { width: 150px; }
+    .result-table th:nth-child(4), .result-table td:nth-child(4) { width: auto; }
     </style>
 
     <div class="header-container">
@@ -146,7 +142,6 @@ raw_target_data = {
         ["서울특별시", "https://www.seoul.go.kr/news/news_notice.do?bbsNo=277&srchText=교섭"],
         ["서울_강남", "https://www.gangnam.go.kr/notice/list.do?mid=ID05_040201&keyfield=BNI_MAIN_TITLE&keyword=교섭"],
         ["서울_강동", "https://www.gangdong.go.kr/web/newportal/notice/01?sv=교섭"],
-#        ["서울_강북", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&bbsId=&cl1Cd=&optn5=&pageIndex=1&searchCnd2=&searchCnd=&searchWrd=%EA%B5%90%EC%84%AD"],
         ["서울_강서", "https://www.gangseo.seoul.kr/gs040301?srchKey=sj&srchText=교섭"],
         ["서울_구로", "https://www.guro.go.kr/www/selectBbsNttList.do?key=1791&bbsNo=663&searchCnd=SJ&searchKrwd=교섭"],
         ["서울_금천", "https://www.geumcheon.go.kr/portal/tblSeolGosiDetailList.do?key=294&rep=1&searchCnd=all&searchKrwd=%EA%B5%90%EC%84%AD"],
@@ -216,7 +211,6 @@ raw_target_data = {
     ]
 }
 
-# 자동화 완료된 항목(경기도/울산광역시/경상남도)은 manual에서 제거
 manual_data = [
     ["보건복지부", "https://www.mohw.go.kr/board.es?mid=a10501010200&bid=0003"],
     ["서울_강북구", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&bbsId=&cl1Cd=&optn5=&pageIndex=1&searchCnd2=&searchCnd=&searchWrd=%EA%B5%90%EC%84%AD"],
@@ -247,7 +241,6 @@ manual_data = [
     ["충남_공주", "https://www.gongju.go.kr/prog/saeolGosi/GOSI_01/sub04_03_01/list.do"],
     ["충남_당진", "https://www.dangjin.go.kr/kor/sub03_02_01_01.do"],
     ["충남_천안", "https://www.cheonan.go.kr/kor/sub02_02_01.do"],
-#    ["충청북도", "https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422&searchKrwd=%EA%B5%90%EC%84%AD"],
     ["충북_단양", "https://www.danyang.go.kr/dy21/976"],
     ["충북_영동", "https://www.yd21.go.kr/kr/html/sub02/020103.html?mode=L"],
     ["충북_증평", "http://www.jp.go.kr/kor/sub03_01_03.do"],
@@ -257,6 +250,18 @@ manual_data = [
 
 target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
 manual_sites = sorted(manual_data, key=lambda x: x[0])
+
+# -------------------------------------------------
+# 세션 상태 초기화
+# -------------------------------------------------
+if "region_selector_open" not in st.session_state:
+    st.session_state["region_selector_open"] = False
+
+if "last_results" not in st.session_state:
+    st.session_state["last_results"] = []
+
+if "last_run_time" not in st.session_state:
+    st.session_state["last_run_time"] = None
 
 # -------------------------------------------------
 # 유틸
@@ -269,20 +274,22 @@ SESSION_HEADERS = {
     )
 }
 
-MAX_WORKERS = 8
+MAX_WORKERS = 2
+ERROR_STATUSES = {"⚠️ 타임아웃", "⚠️ 접속 오류", "⚠️ 요청 실패", "⚠️ 파싱 오류", "⚠️ 실행 오류"}
 
 def create_session():
     session = requests.Session()
     session.headers.update(SESSION_HEADERS)
     return session
 
-def make_result(name, url, status, detected_date="", detected_title=""):
+def make_result(name, search_url, status, detected_date="", detected_title="", detected_link=""):
     return {
         "지자체명": name,
-        "링크": url,
+        "검색링크": search_url,
         "상태": status,
         "감지일자": detected_date,
-        "감지제목": detected_title
+        "감지제목": detected_title,
+        "감지링크": detected_link
     }
 
 def extract_text_lines(html: str):
@@ -349,7 +356,6 @@ def extract_date_from_text(text: str):
     return ""
 
 def extract_date_from_item(item: dict):
-
     priority_keys = [
         "regDt", "regdate", "date", "createdAt",
         "frstRegDt", "inputDate", "writeDate",
@@ -423,7 +429,6 @@ def classify_status_from_lines(lines, keyword: str = "교섭", recent_days: int 
 
     first_title = clean_title(keyword_lines[0][1])
 
-    # 1차: 신규 판정은 엄격하게 (앞뒤 1줄)
     for idx, line in keyword_lines:
         near_lines_strict = lines[max(0, idx - 1): min(len(lines), idx + 2)]
         joined_strict = " ".join(near_lines_strict)
@@ -433,7 +438,6 @@ def classify_status_from_lines(lines, keyword: str = "교섭", recent_days: int 
                 detected_date = extract_date_from_text(joined_strict)
                 return "🔴 신규", detected_date or normalize_date_string(day), clean_title(line)
 
-    # 2차: 감지일자는 조금 넓게 찾기 (앞뒤 5줄)
     for idx, line in keyword_lines:
         near_lines_wide = lines[max(0, idx - 5): min(len(lines), idx + 6)]
         joined_wide = " ".join(near_lines_wide)
@@ -442,12 +446,62 @@ def classify_status_from_lines(lines, keyword: str = "교섭", recent_days: int 
         if detected_date:
             return "🟡 기존 공고", detected_date, clean_title(line)
 
-    # 3차: 제목 줄 자체에서 날짜 찾기
     title_date = extract_date_from_text(first_title)
     if title_date:
         return "🟡 기존 공고", title_date, first_title
 
     return "🟡 기존 공고", "", first_title
+
+def extract_link_from_tag(tag, base_url: str):
+    href = (tag.get("href") or "").strip()
+    if href and href != "#" and not href.lower().startswith("javascript:"):
+        return urljoin(base_url, href)
+
+    onclick = (tag.get("onclick") or "").strip()
+    if onclick:
+        patterns = [
+            r"""location\.href\s*=\s*['"]([^'"]+)['"]""",
+            r"""document\.location\s*=\s*['"]([^'"]+)['"]""",
+            r"""window\.open\(\s*['"]([^'"]+)['"]""",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, onclick)
+            if match:
+                return urljoin(base_url, match.group(1).strip())
+
+    return ""
+
+def extract_best_post_link(html: str, base_url: str, keyword: str = "교섭", preferred_title: str = ""):
+    soup = BeautifulSoup(html, "html.parser")
+    candidates = []
+
+    for tag in soup.find_all("a"):
+        text = clean_title(tag.get_text(" ", strip=True))
+        if not text:
+            continue
+        if keyword not in text:
+            continue
+        if looks_like_noise(text):
+            continue
+
+        link = extract_link_from_tag(tag, base_url)
+        if not link:
+            continue
+
+        score = 0
+        if preferred_title and preferred_title == text:
+            score += 1000
+        if preferred_title and preferred_title in text:
+            score += 200
+        score += min(len(text), 120)
+
+        candidates.append((score, link, text))
+
+    if not candidates:
+        return ""
+
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return candidates[0][1]
 
 def analyze_response_text(name: str, url: str, text: str):
     lines = extract_text_lines(text)
@@ -456,7 +510,11 @@ def analyze_response_text(name: str, url: str, text: str):
     if status != "⚪ 결과 없음" and (not detected_title or len(detected_title) < 8):
         detected_title = extract_best_title_from_lines(lines, keyword="교섭")
 
-    return make_result(name, url, status, detected_date, detected_title)
+    detected_link = ""
+    if status != "⚪ 결과 없음":
+        detected_link = extract_best_post_link(text, url, keyword="교섭", preferred_title=detected_title)
+
+    return make_result(name, url, status, detected_date, detected_title, detected_link)
 
 def get_recent_search_window(days=90):
     today = datetime.now(ZoneInfo("Asia/Seoul")).date()
@@ -467,9 +525,6 @@ def get_recent_search_window(days=90):
 # 전용 자동검색 함수
 # -------------------------------------------------
 def check_gyeongnam(name: str, url: str):
-    """
-    실제 확인한 POST payload 기반
-    """
     session = create_session()
 
     try:
@@ -501,10 +556,6 @@ def check_gyeongnam(name: str, url: str):
         return make_result(name, url, "⚠️ 파싱 오류")
 
 def check_gyeonggi(name: str, url: str):
-    """
-    경기도 게시판 검사 (AJAX API 기반)
-    실제 응답 구조: { total, items }
-    """
     session = create_session()
 
     try:
@@ -536,26 +587,24 @@ def check_gyeonggi(name: str, url: str):
         if not items:
             return make_result(name, url, "⚪ 결과 없음")
 
-        # 교섭이 포함된 제목 우선 탐색
         for item in items:
-            title = (
-                item.get("subject")
-                or item.get("title")
-                or item.get("sj")
-                or ""
-            )
-
+            title = item.get("subject") or item.get("title") or item.get("sj") or ""
             if "교섭" in title:
                 date = extract_date_from_item(item)
-                return make_result(name, url, "🟡 기존 공고", date, title)
+                detail_url = url
 
-        # 혹시 제목 키 이름이 다른 경우를 대비한 2차 탐색
+                for key in ["url", "link", "detailUrl", "boardUrl"]:
+                    if isinstance(item.get(key), str) and item.get(key):
+                        detail_url = urljoin(url, item[key])
+                        break
+
+                return make_result(name, url, "🟡 기존 공고", date, title, detail_url)
+
         for item in items:
             for value in item.values():
                 if isinstance(value, str) and "교섭" in value:
                     date = extract_date_from_item(item)
-                    
-                    return make_result(name, url, "🟡 기존 공고", date, value[:120])
+                    return make_result(name, url, "🟡 기존 공고", date, value[:120], url)
 
         return make_result(name, url, "⚪ 결과 없음")
 
@@ -567,12 +616,8 @@ def check_gyeonggi(name: str, url: str):
         return make_result(name, url, "⚠️ 요청 실패")
     except Exception as e:
         return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120])
-        
+
 def check_ulsan_metropolitan(name: str, url: str):
-    """
-    울산광역시 고시공고 전용 POST 검색
-    실제 확인한 payload 기반
-    """
     session = create_session()
 
     try:
@@ -597,13 +642,11 @@ def check_ulsan_metropolitan(name: str, url: str):
         return make_result(name, url, "⚠️ 요청 실패")
     except Exception:
         return make_result(name, url, "⚠️ 파싱 오류")
-        
+
 # -------------------------------------------------
 # 공통 검사 함수
 # -------------------------------------------------
-@st.cache_data(ttl=600, show_spinner=False)
 def check_site_stable(name: str, url: str):
-    # 전용 자동검색 분기
     if name == "경상남도" or "gyeongnam.go.kr/index.gyeong" in url:
         return check_gyeongnam(name, url)
 
@@ -632,24 +675,56 @@ def check_site_stable(name: str, url: str):
         return make_result(name, url, "⚠️ 파싱 오류")
 
 # -------------------------------------------------
-# 엑셀 / 표시 유틸
+# 표시 / 엑셀 유틸
 # -------------------------------------------------
-def extract_href_for_excel(value):
-    if isinstance(value, str) and 'href="' in value:
-        match = re.search(r'href="(.*?)"', value)
-        if match:
-            return match.group(1)
-    return value
+def make_clickable_link(url: str, text: str):
+    if not url:
+        return ""
+    return f'<a href="{url}" target="_blank">{text}</a>'
 
-def to_excel(df: pd.DataFrame):
+def get_display_link_text(row):
+    detected_link = row.get("감지링크", "")
+    search_url = row.get("검색링크", "")
+    if detected_link:
+        return make_clickable_link(detected_link, "게시물로 이동")
+    if search_url:
+        return make_clickable_link(search_url, "검색결과 보기")
+    return ""
+
+def make_display_dataframe(results):
+    df = pd.DataFrame(results)
+
+    if df.empty:
+        return pd.DataFrame(columns=["지자체명", "상태", "감지일자", "감지내용 확인"])
+
+    df_display = pd.DataFrame({
+        "지자체명": df["지자체명"],
+        "상태": df["상태"],
+        "감지일자": df["감지일자"],
+        "감지내용 확인": df.apply(get_display_link_text, axis=1)
+    })
+    return df_display
+
+def to_excel(results):
+    df = pd.DataFrame(results)
+
+    if df.empty:
+        export_df = pd.DataFrame(columns=["지자체명", "상태", "감지일자", "감지내용 확인"])
+    else:
+        export_df = pd.DataFrame({
+            "지자체명": df["지자체명"],
+            "상태": df["상태"],
+            "감지일자": df["감지일자"],
+            "감지내용 확인": df.apply(
+                lambda row: row["감지링크"] if row.get("감지링크") else row.get("검색링크", ""),
+                axis=1
+            )
+        })
+
     output = BytesIO()
-    df_excel = df.copy()
-
-    if "링크" in df_excel.columns:
-        df_excel["링크"] = df_excel["링크"].apply(extract_href_for_excel)
 
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-        df_excel.to_excel(writer, index=False, sheet_name="교섭공고결과")
+        export_df.to_excel(writer, index=False, sheet_name="교섭공고결과")
 
         workbook = writer.book
         worksheet = writer.sheets["교섭공고결과"]
@@ -669,24 +744,20 @@ def to_excel(df: pd.DataFrame):
             "text_wrap": True
         })
 
-        for col_num, value in enumerate(df_excel.columns.values):
+        for col_num, value in enumerate(export_df.columns.values):
             worksheet.write(0, col_num, value, header_format)
 
         col_widths = {
             "지자체명": 18,
-            "링크": 18,
             "상태": 16,
             "감지일자": 14,
-            "감지제목": 70
+            "감지내용 확인": 70
         }
 
-        for idx, col in enumerate(df_excel.columns):
+        for idx, col in enumerate(export_df.columns):
             worksheet.set_column(idx, idx, col_widths.get(col, 20), cell_format)
 
     return output.getvalue()
-
-def make_clickable_link(url: str, text: str = "이동하여 검색"):
-    return f'<a href="{url}" target="_blank">{text}</a>'
 
 def group_manual_sites(manual_sites):
     grouped = {}
@@ -708,107 +779,173 @@ def sort_results_by_target_order(results, target_sites):
     order_map = {name: i for i, (name, _) in enumerate(target_sites)}
     return sorted(results, key=lambda x: order_map.get(x["지자체명"], 999999))
 
+def run_checks(target_sites):
+    results = []
+    total_count = len(target_sites)
+    completed_count = 0
+
+    status_placeholder = st.empty()
+    progress_bar = st.progress(0)
+
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        future_map = {
+            executor.submit(check_site_stable, name, url): (name, url)
+            for name, url in target_sites
+        }
+
+        for future in as_completed(future_map):
+            name, url = future_map[future]
+
+            try:
+                result = future.result()
+            except Exception:
+                result = make_result(name, url, "⚠️ 실행 오류")
+
+            results.append(result)
+            completed_count += 1
+
+            percent = int((completed_count / total_count) * 100)
+            status_placeholder.markdown(
+                f"<span class='status-text'>⏳ [{percent}%] 총 {total_count}개 중 {completed_count}개 완료</span>",
+                unsafe_allow_html=True
+            )
+            progress_bar.progress(completed_count / total_count)
+
+    results = sort_results_by_target_order(results, target_sites)
+    status_placeholder.success(f"✅ 검사 완료! (총 {len(target_sites)}개)")
+    st.session_state["last_results"] = results
+    st.session_state["last_run_time"] = datetime.now(ZoneInfo("Asia/Seoul"))
+    return results
+
 # -------------------------------------------------
-# 사이드바
+# 메인 화면 지역 선택
 # -------------------------------------------------
+def toggle_region_selector():
+    st.session_state["region_selector_open"] = not st.session_state["region_selector_open"]
+
 def on_all_clicked():
+    checked = st.session_state["main_all_regions"]
     for region in sort_order:
-        st.session_state[f"sidebar_{region}"] = st.session_state["all_regions"]
+        st.session_state[f"main_region_{region}"] = checked
 
-st.sidebar.header("📍 검색 지역 설정")
-st.sidebar.checkbox("전체 지역 선택", value=False, key="all_regions", on_change=on_all_clicked)
+def on_region_clicked():
+    all_selected = True
+    for region in sort_order:
+        if len(target_data.get(region, [])) > 0 and not st.session_state.get(f"main_region_{region}", False):
+            all_selected = False
+            break
+    st.session_state["main_all_regions"] = all_selected
 
-selected_regions = []
+total_target_count = sum(len(target_data.get(region, [])) for region in sort_order)
+
 for region in sort_order:
-    count = len(target_data[region])
+    if f"main_region_{region}" not in st.session_state:
+        st.session_state[f"main_region_{region}"] = False
 
-    if f"sidebar_{region}" not in st.session_state:
-        st.session_state[f"sidebar_{region}"] = False
+if "main_all_regions" not in st.session_state:
+    st.session_state["main_all_regions"] = False
 
-    is_checked = st.sidebar.checkbox(f"{region} ({count})", key=f"sidebar_{region}")
-    if is_checked and count > 0:
-        selected_regions.append(region)
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.button(
+        "검색할 지역 선택",
+        use_container_width=True,
+        on_click=toggle_region_selector
+    )
+
+with col2:
+    run_clicked = st.button(
+        "선택 지역 자동 확인 시작",
+        use_container_width=True
+    )
+
+if st.session_state["region_selector_open"]:
+    st.markdown('<div class="selector-box">', unsafe_allow_html=True)
+    st.markdown('<div class="selector-title">검색할 지역을 선택하세요</div>', unsafe_allow_html=True)
+
+    st.checkbox(
+        f"전체 지역 선택 ({total_target_count})",
+        key="main_all_regions",
+        on_change=on_all_clicked
+    )
+
+    region_cols = st.columns(2)
+    selected_regions = []
+
+    for idx, region in enumerate(sort_order):
+        count = len(target_data[region])
+        with region_cols[idx % 2]:
+            checked = st.checkbox(
+                f"{region} ({count})",
+                key=f"main_region_{region}",
+                on_change=on_region_clicked
+            )
+            if checked and count > 0:
+                selected_regions.append(region)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+else:
+    selected_regions = [
+        region for region in sort_order
+        if st.session_state.get(f"main_region_{region}", False) and len(target_data[region]) > 0
+    ]
 
 target_sites = []
 for reg in selected_regions:
     target_sites.extend(target_data[reg])
 
 # -------------------------------------------------
-# 안내
-# -------------------------------------------------
-if not selected_regions:
-    st.markdown(
-        '<div class="guide-box">왼쪽 상단 [ > ] 화살표 눌러 지역 선택!</div>',
-        unsafe_allow_html=True
-    )
-
-# -------------------------------------------------
-# 실행 버튼
-# -------------------------------------------------
-status_placeholder = st.empty()
-
-col1, col2, col3 = st.columns([1, 2.2, 1])
-with col2:
-    run_clicked = st.button("선택 지역 자동 확인 시작", use_container_width=True)
-
-# -------------------------------------------------
-# 실행
+# 검색 실행
 # -------------------------------------------------
 if run_clicked:
     if not target_sites:
-        st.warning("지역을 먼저 선택해주세요.")
+        st.warning("검색할 지역을 먼저 선택해주세요.")
     else:
-        results = []
-        total_count = len(target_sites)
-        completed_count = 0
-        progress_bar = st.progress(0)
+        run_checks(target_sites)
 
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            future_map = {
-                executor.submit(check_site_stable, name, url): (name, url)
-                for name, url in target_sites
-            }
+# -------------------------------------------------
+# 결과 표시
+# -------------------------------------------------
+if st.session_state["last_results"]:
+    results = st.session_state["last_results"]
+    df_display = make_display_dataframe(results)
 
-            for future in as_completed(future_map):
-                name, url = future_map[future]
+    st.download_button(
+        label="📥 결과 엑셀 내려받기",
+        data=to_excel(results),
+        file_name=f"교섭결과_{datetime.now(ZoneInfo('Asia/Seoul')).strftime('%m%d_%H%M')}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
-                try:
-                    result = future.result()
-                except Exception:
-                    result = make_result(name, url, "⚠️ 실행 오류")
+    st.write(
+        df_display.to_html(escape=False, index=False, classes="result-table"),
+        unsafe_allow_html=True
+    )
 
-                results.append(result)
-                completed_count += 1
+    error_sites = [
+        (row["지자체명"], row["검색링크"])
+        for row in results
+        if row["상태"] in ERROR_STATUSES
+    ]
 
-                percent = int((completed_count / total_count) * 100)
-                status_placeholder.markdown(
-                    f"<span class='status-text'>⏳ [{percent}%] 총 {total_count}개 중 {completed_count}개 완료</span>",
-                    unsafe_allow_html=True
-                )
-                progress_bar.progress(completed_count / total_count)
+    if error_sites:
+        st.markdown("")
+        retry_clicked = st.button("에러 지역 다시 확인", use_container_width=True)
 
-        results = sort_results_by_target_order(results, target_sites)
+        if retry_clicked:
+            retry_results = run_checks(error_sites)
 
-        status_placeholder.success(f"✅ 검사 완료! (총 {len(target_sites)}개)")
+            existing_map = {row["지자체명"]: row for row in st.session_state["last_results"]}
+            for row in retry_results:
+                existing_map[row["지자체명"]] = row
 
-        df = pd.DataFrame(results)
-
-        df_display = df.copy()
-        df_display["링크"] = df_display["링크"].apply(
-            lambda x: make_clickable_link(x) if x else ""
-        )
-
-        st.download_button(
-            label="📥 결과 엑셀 내려받기",
-            data=to_excel(df),
-            file_name=f"교섭결과_{datetime.now(ZoneInfo('Asia/Seoul')).strftime('%m%d_%H%M')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-
-        st.write(
-            df_display.to_html(escape=False, index=False, classes="result-table"),
-            unsafe_allow_html=True
-        )
+            merged_results = sort_results_by_target_order(
+                list(existing_map.values()),
+                [(row["지자체명"], row["검색링크"]) for row in st.session_state["last_results"]]
+            )
+            st.session_state["last_results"] = merged_results
+            st.rerun()
 
 # -------------------------------------------------
 # 직접 확인 리스트 (지역별 접기)
@@ -838,7 +975,7 @@ for region in manual_region_order:
         with st.expander(f"{region} ({len(sites)})", expanded=False):
             region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
             region_df["링크"] = region_df["링크"].apply(
-                lambda x: make_clickable_link(x)
+                lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
 
@@ -847,23 +984,6 @@ for region, sites in manual_grouped.items():
         with st.expander(f"{region} ({len(sites)})", expanded=False):
             region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
             region_df["링크"] = region_df["링크"].apply(
-                lambda x: make_clickable_link(x)
+                lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
