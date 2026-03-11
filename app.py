@@ -154,7 +154,6 @@ raw_target_data = {
         ["서울_동작", "https://www.dongjak.go.kr/portal/bbs/B0001297/list.do?menuNo=201317&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD"],
         ["서울_마포", "https://www.mapo.go.kr/site/main/nPortal/list?sv=%EA%B5%90%EC%84%AD"],
         ["서울_성동", "https://www.sd.go.kr/main/selectBbsNttList.do?key=1473&bbsNo=184&searchCnd=SJ&searchKrwd=%EA%B5%90%EC%84%AD"],
-        ["서울_성북", "https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchCnd2=notAncmtSj&searchKrwd=교섭"],
         ["서울_영등포", "https://www.ydp.go.kr/www/selectEminwonList.do?key=2851&searchCnd=B_Subject&searchKrwd=교섭"],
         ["서울_용산", "https://www.yongsan.go.kr/portal/bbs/B0000095/list.do?menuNo=200233&searchCnd=1&searchWrd=교섭"],
         ["서울_은평", "https://www.ep.go.kr/www/selectEminwonList.do?key=754&searchCnd=notAncmtSj&searchKrwd=교섭"],
@@ -168,7 +167,6 @@ raw_target_data = {
     "대구광역시": [
         ["대구_동구", "https://www.dong.daegu.kr/portal/saeol/gosi/list.do?mid=0201020000&searchKrwd=%EA%B5%90%EC%84%AD"],
         ["대구_달서구", "https://www.dalseo.daegu.kr/index.do?menu_id=10000104&searchKey=sj&searchKeyword=%EA%B5%90%EC%84%AD"],
-        ["대구_중구", "https://www.jung.daegu.kr/new/pages/administration/page.html?mc=0159"],
     ],
     "울산광역시": [
         ["울산광역시", "https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan?mId=001004002000000000"]
@@ -205,7 +203,6 @@ raw_target_data = {
     ],
     "충청북도": [
         ["충청북도", "https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422&searchKrwd=%EA%B5%90%EC%84%AD"],
-        ["충북_괴산", "https://www.goesan.go.kr/www/selectBbsNttList.do?key=604"],
         ["충북_보은", "https://www.boeun.go.kr/www/selectBbsNttList.do?key=194&bbsNo=66&searchCnd=SJ&searchKrwd=교섭"],
         ["충북_옥천", "https://www.oc.go.kr/www/selectBbsNttList.do?key=236&bbsNo=40&searchCnd=SJ&searchKrwd=교섭"],
         ["충북_음성", "https://www.eumseong.go.kr/www/selectEminwonList.do?key=352&searchCnd=B_Subject&searchKrwd=교섭"],
@@ -219,6 +216,7 @@ manual_data = [
     ["서울_강북구", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&bbsId=&cl1Cd=&optn5=&pageIndex=1&searchCnd2=&searchCnd=&searchWrd=%EA%B5%90%EC%84%AD"],
     ["서울_관악구", "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/List.do?typeCode=1&searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
     ["서울_서대문구", "https://www.sdm.go.kr/news/notice/notice.do?mode=list&srchTitle=%EA%B5%90%EC%84%AD"],
+    ["서울_성북", "https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchCnd2=notAncmtSj&searchKrwd=교섭"],
     ["서울_송파구", "https://www.songpa.go.kr/www/selectGosiList.do?key=2776&not_ancmt_se_code=&searchCnd=SJ&searchKrwd=교섭"],
     ["서울_양천구", "https://www.yangcheon.go.kr/site/yangcheon/ex/bbs/List.do?cbIdx=254#"],
     ["서울_종로구", "https://www.jongno.go.kr/portal/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000271&menuNo=1756&menuId=1756"],
@@ -226,6 +224,7 @@ manual_data = [
     ["부산_사상구", "https://www.sasang.go.kr/tour/board/list.sasang?boardId=BBS_0000001&menuIdx=75&searchCnd=0&searchWrd=%EA%B5%90%EC%84%AD"],
     ["대구광역시", "https://www.daegu.go.kr/index.do?menu_id=00000052&srchVal=%EA%B5%90%EC%84%AD&srchKey=sj"],
     ["대구_남구", "https://nam.daegu.kr/index.do?menu_id=00000851"],
+    ["대구_중구", "https://www.jung.daegu.kr/new/pages/administration/page.html?mc=0159"],
     ["울산_남구", "https://www.ulsannamgu.go.kr/cop/bbs/selectSaeolGosiList.do"],
     ["울산_동구", "https://www.donggu.ulsan.kr/donggu/contents/contents.do?mId=4040100"],
     ["울산_북구", "https://www.bukgu.ulsan.kr/lay1/S1T86C456/contents.do"],
@@ -244,6 +243,7 @@ manual_data = [
     ["충남_공주", "https://www.gongju.go.kr/prog/saeolGosi/GOSI_01/sub04_03_01/list.do"],
     ["충남_당진", "https://www.dangjin.go.kr/kor/sub03_02_01_01.do"],
     ["충남_천안", "https://www.cheonan.go.kr/kor/sub02_02_01.do"],
+    ["충북_괴산", "https://www.goesan.go.kr/www/selectBbsNttList.do?key=604"],
     ["충북_단양", "https://www.danyang.go.kr/dy21/976"],
     ["충북_영동", "https://www.yd21.go.kr/kr/html/sub02/020103.html?mode=L"],
     ["충북_증평", "http://www.jp.go.kr/kor/sub03_01_03.do"],
@@ -277,7 +277,7 @@ SESSION_HEADERS = {
     )
 }
 
-MAX_WORKERS = 1
+MAX_WORKERS = 3
 ERROR_STATUSES = {"⚠️ 타임아웃", "⚠️ 접속 오류", "⚠️ 요청 실패", "⚠️ 파싱 오류", "⚠️ 실행 오류"}
 
 def create_session():
@@ -479,8 +479,20 @@ def classify_status_from_lines(lines, keyword: str = "교섭", recent_days: int 
 
 def extract_link_from_tag(tag, base_url: str):
     href = (tag.get("href") or "").strip()
-    if href and href != "#" and not href.lower().startswith("javascript:"):
-        return urljoin(base_url, href)
+
+    if href and href != "#":
+        if not href.lower().startswith("javascript:"):
+            return urljoin(base_url, href)
+
+        js_patterns = [
+            r"""javascript:[a-zA-Z0-9_]+\(['"]([^'"]+)['"]\)""",
+        ]
+        for pattern in js_patterns:
+            match = re.search(pattern, href)
+            if match:
+                value = match.group(1).strip()
+                if value.startswith("/") or value.startswith("http"):
+                    return urljoin(base_url, value)
 
     onclick = (tag.get("onclick") or "").strip()
     if onclick:
@@ -488,11 +500,14 @@ def extract_link_from_tag(tag, base_url: str):
             r"""location\.href\s*=\s*['"]([^'"]+)['"]""",
             r"""document\.location\s*=\s*['"]([^'"]+)['"]""",
             r"""window\.open\(\s*['"]([^'"]+)['"]""",
+            r"""[a-zA-Z0-9_]+\(['"]([^'"]+)['"]\)""",
         ]
         for pattern in patterns:
             match = re.search(pattern, onclick)
             if match:
-                return urljoin(base_url, match.group(1).strip())
+                value = match.group(1).strip()
+                if value.startswith("/") or value.startswith("http"):
+                    return urljoin(base_url, value)
 
     return ""
 
@@ -504,8 +519,13 @@ def extract_best_post_link(html: str, base_url: str, keyword: str = "교섭", pr
         text = clean_title(tag.get_text(" ", strip=True))
         if not text:
             continue
-        if keyword not in text:
-            continue
+        if preferred_title:
+            if preferred_title not in text and text not in preferred_title and keyword not in text:
+                continue
+
+        else:
+            if keyword not in text:
+                continue
         if looks_like_noise(text):
             continue
 
@@ -683,13 +703,13 @@ def check_site_stable(name: str, url: str):
 
     session = create_session()
 
-    for attempt in range(3):
+    for attempt in range(2):
         try:
-            time.sleep(0.4 * attempt)
+            time.sleep(0.15 * attempt)
 
             response = session.get(
                 url,
-                timeout=(10, 25),
+                timeout=(5, 8),
                 allow_redirects=True
             )
             response.raise_for_status()
@@ -698,14 +718,14 @@ def check_site_stable(name: str, url: str):
             return analyze_response_text(name, url, response.text)
 
         except requests.exceptions.Timeout:
-            if attempt == 2:
+            if attempt == 1:
                 return make_result(name, url, "⚠️ 타임아웃")
 
         except requests.exceptions.SSLError:
             try:
                 response = session.get(
                     url,
-                    timeout=(10, 25),
+                    timeout=(5, 8),
                     allow_redirects=True,
                     verify=False
                 )
@@ -715,12 +735,12 @@ def check_site_stable(name: str, url: str):
                 return analyze_response_text(name, url, response.text)
 
             except requests.exceptions.Timeout:
-                if attempt == 2:
+                if attempt == 1:
                     return make_result(name, url, "⚠️ 타임아웃")
             except requests.exceptions.HTTPError:
                 return make_result(name, url, "⚠️ 접속 오류")
             except requests.exceptions.RequestException:
-                if attempt == 2:
+                if attempt == 1:
                     return make_result(name, url, "⚠️ 요청 실패")
             except Exception:
                 return make_result(name, url, "⚠️ 파싱 오류")
@@ -729,7 +749,7 @@ def check_site_stable(name: str, url: str):
             return make_result(name, url, "⚠️ 접속 오류")
 
         except requests.exceptions.RequestException:
-            if attempt == 2:
+            if attempt == 1:
                 return make_result(name, url, "⚠️ 요청 실패")
 
         except Exception:
@@ -1051,6 +1071,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
