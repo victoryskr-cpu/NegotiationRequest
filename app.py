@@ -7,7 +7,13 @@ from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
 from io import BytesIO
-from data_targets import prepare_first_automation_batch
+from data_targets import (
+    raw_target_data,
+    manual_data,
+    prepare_first_automation_batch,
+    update_candidate_status,
+    finalize_verified_targets,
+)
 from crawler_site_handlers import run_site_handler
 
 # -------------------------------------------------
@@ -844,6 +850,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x)
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
