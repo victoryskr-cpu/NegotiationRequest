@@ -137,7 +137,7 @@ st.markdown("""
 # -------------------------------------------------
 sort_order = [
     "서울특별시", "부산광역시", "대구광역시", "울산광역시", "강원도",
-    "경기도", "전라북도", "경상북도", "경상남도", "충청남도", "충청북도"
+    "경기도", "전북특별자치도", "경상북도", "경상남도", "충청남도", "충청북도"
 ]
 
 raw_target_data = {
@@ -179,7 +179,7 @@ raw_target_data = {
         ["경기도", "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547"],
         ["경기_구리", "https://www.guri.go.kr/www/selectGosiNttList.do?key=387&searchCnd=ALL&searchKrwd=%EA%B5%90%EC%84%AD"],
     ],
-    "전라북도": [
+    "전북특별자치도": [
         ["전북특별자치도", "https://www.jeonbuk.go.kr/board/list.jeonbuk?boardId=BBS_0000129&searchType=DATA_TITLE&keyword=%EA%B5%90%EC%84%AD"],
         ["전북_군산", "https://www.gunsan.go.kr/main/m141"],
         ["전북_전주", "https://www.jeonju.go.kr/planweb/board/list.9is?boardUid=9be517a7914528ce01930aa3ddc26cf0&contentUid=ff8080818990c349018b041a879f395a&searchType=dataTitle&keyword=%EA%B5%90%EC%84%AD"]
@@ -481,20 +481,11 @@ def extract_link_from_tag(tag, base_url: str):
     href = (tag.get("href") or "").strip()
 
     if href and href != "#":
-        if not href.lower().startswith("javascript:"):
-            return urljoin(base_url, href)
+        bad_prefixes = ("javascript:", "intent:", "kakaolink:", "mailto:")
+        if href.lower().startswith(bad_prefixes):
+            return ""
 
-        # javascript 내부에 실제 URL이 들어있는 경우
-        js_patterns = [
-            r"""javascript:[a-zA-Z0-9_]+\(['"]([^'"]+)['"]\)""",
-            r"""javascript:location\.href=['"]([^'"]+)['"]""",
-        ]
-        for pattern in js_patterns:
-            match = re.search(pattern, href)
-            if match:
-                value = match.group(1).strip()
-                if value.startswith("/") or value.startswith("http"):
-                    return urljoin(base_url, value)
+        return urljoin(base_url, href)
 
     onclick = (tag.get("onclick") or "").strip()
     if onclick:
@@ -502,12 +493,16 @@ def extract_link_from_tag(tag, base_url: str):
             r"""location\.href\s*=\s*['"]([^'"]+)['"]""",
             r"""document\.location\s*=\s*['"]([^'"]+)['"]""",
             r"""window\.open\(\s*['"]([^'"]+)['"]""",
-            r"""[a-zA-Z0-9_]+\(['"]([^'"]+)['"]\)""",
         ]
+
         for pattern in patterns:
             match = re.search(pattern, onclick)
             if match:
                 value = match.group(1).strip()
+
+                if value.lower().startswith(("javascript:", "intent:", "kakaolink:", "mailto:")):
+                    return ""
+
                 if value.startswith("/") or value.startswith("http"):
                     return urljoin(base_url, value)
 
@@ -784,17 +779,42 @@ def make_clickable_link(url: str, text: str):
     return f'<a href="{url}" target="_blank">{text}</a>'
 
 def get_display_link_text(row):
+    name = (row.get("지자체명") or "").strip()
     detected_link = (row.get("감지링크") or "").strip()
     search_url = (row.get("검색링크") or "").strip()
 
-    # 감지링크가 없거나 검색링크와 같으면 상세링크로 인정하지 않음
-    if detected_link and detected_link != search_url:
-        return make_clickable_link(detected_link, "게시물로 이동")
+    # 1) 상세링크를 신뢰하지 않을 사이트들
+    force_search_only = {
+        "강원특별자치도",
+        "경남_김해",
+        "경남_창원",
+    }
 
-    if search_url:
-        return make_clickable_link(search_url, "검색결과 보기")
+    if name in force_search_only:
+        if search_url:
+            return make_clickable_link(search_url, "검색결과 보기")
+        return ""
 
-    return ""
+    # 2) 감지링크가 없거나 검색링크와 같으면 검색결과 보기
+    if not detected_link or detected_link == search_url:
+        if search_url:
+            return make_clickable_link(search_url, "검색결과 보기")
+        return ""
+
+    # 3) 이상한 링크 필터링
+    bad_prefixes = (
+        "javascript:",
+        "intent:",
+        "kakaolink:",
+        "mailto:",
+    )
+    if detected_link.lower().startswith(bad_prefixes):
+        if search_url:
+            return make_clickable_link(search_url, "검색결과 보기")
+        return ""
+
+    # 4) 정상 상세링크만 게시물로 이동
+    return make_clickable_link(detected_link, "게시물로 이동")
 
 def make_display_dataframe(results):
     df = pd.DataFrame(results)
@@ -1104,6 +1124,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
