@@ -484,8 +484,10 @@ def extract_link_from_tag(tag, base_url: str):
         if not href.lower().startswith("javascript:"):
             return urljoin(base_url, href)
 
+        # javascript 내부에 실제 URL이 들어있는 경우
         js_patterns = [
             r"""javascript:[a-zA-Z0-9_]+\(['"]([^'"]+)['"]\)""",
+            r"""javascript:location\.href=['"]([^'"]+)['"]""",
         ]
         for pattern in js_patterns:
             match = re.search(pattern, href)
@@ -516,29 +518,45 @@ def extract_best_post_link(html: str, base_url: str, keyword: str = "교섭", pr
     candidates = []
 
     for tag in soup.find_all("a"):
-        text = clean_title(tag.get_text(" ", strip=True))
+        text = tag.get_text(" ", strip=True)
+
         if not text:
             continue
+
+        text = clean_title(text)
+
         if preferred_title:
             if preferred_title not in text and text not in preferred_title and keyword not in text:
                 continue
-
         else:
             if keyword not in text:
                 continue
+
         if looks_like_noise(text):
             continue
 
         link = extract_link_from_tag(tag, base_url)
+
+        # 상세링크가 없으면 후보에서 제외
         if not link:
             continue
 
+        # 검색결과 페이지와 같은 링크는 상세링크로 보지 않음
+        if link.strip() == base_url.strip():
+            continue
+
         score = 0
-        if preferred_title and preferred_title == text:
-            score += 1000
-        if preferred_title and preferred_title in text:
-            score += 200
-        score += min(len(text), 120)
+
+        if preferred_title:
+            if preferred_title == text:
+                score += 100
+            elif preferred_title in text or text in preferred_title:
+                score += 50
+
+        if keyword in text:
+            score += 10
+
+        score += min(len(text), 30)
 
         candidates.append((score, link, text))
 
@@ -766,12 +784,16 @@ def make_clickable_link(url: str, text: str):
     return f'<a href="{url}" target="_blank">{text}</a>'
 
 def get_display_link_text(row):
-    detected_link = row.get("감지링크", "")
-    search_url = row.get("검색링크", "")
-    if detected_link:
+    detected_link = (row.get("감지링크") or "").strip()
+    search_url = (row.get("검색링크") or "").strip()
+
+    # 감지링크가 없거나 검색링크와 같으면 상세링크로 인정하지 않음
+    if detected_link and detected_link != search_url:
         return make_clickable_link(detected_link, "게시물로 이동")
+
     if search_url:
         return make_clickable_link(search_url, "검색결과 보기")
+
     return ""
 
 def make_display_dataframe(results):
@@ -1082,6 +1104,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
