@@ -683,71 +683,60 @@ def check_site_stable(name: str, url: str):
 
     session = create_session()
 
-    try:
-
-        for attempt in range(3):
-
-            try:
-
-                time.sleep(0.4 * attempt)
-
-                response = session.get(
-                    url,
-                    timeout=(10,25),
-                    allow_redirects=True
-                )
-        
-        response.raise_for_status()
-        response.encoding = response.apparent_encoding or response.encoding
-
-        return analyze_response_text(name, url, response.text)
-
-    except requests.exceptions.Timeout:
-
-        if attempt == 2:
-            return make_result(name, url, "⚠️ 타임아웃")
-
-    except requests.exceptions.SSLError:
-
+    for attempt in range(3):
         try:
+            time.sleep(0.4 * attempt)
+
             response = session.get(
                 url,
-                timeout=(10,25),
-                verify=False
+                timeout=(10, 25),
+                allow_redirects=True
             )
-
             response.raise_for_status()
-
             response.encoding = response.apparent_encoding or response.encoding
 
             return analyze_response_text(name, url, response.text)
 
+        except requests.exceptions.Timeout:
+            if attempt == 2:
+                return make_result(name, url, "⚠️ 타임아웃")
+
+        except requests.exceptions.SSLError:
+            try:
+                response = session.get(
+                    url,
+                    timeout=(10, 25),
+                    allow_redirects=True,
+                    verify=False
+                )
+                response.raise_for_status()
+                response.encoding = response.apparent_encoding or response.encoding
+
+                return analyze_response_text(name, url, response.text)
+
+            except requests.exceptions.Timeout:
+                if attempt == 2:
+                    return make_result(name, url, "⚠️ 타임아웃")
+            except requests.exceptions.HTTPError:
+                return make_result(name, url, "⚠️ 접속 오류")
+            except requests.exceptions.RequestException:
+                if attempt == 2:
+                    return make_result(name, url, "⚠️ 요청 실패")
+            except Exception:
+                return make_result(name, url, "⚠️ 파싱 오류")
+
+        except requests.exceptions.HTTPError:
+            return make_result(name, url, "⚠️ 접속 오류")
+
+        except requests.exceptions.RequestException:
+            if attempt == 2:
+                return make_result(name, url, "⚠️ 요청 실패")
+
         except Exception:
+            return make_result(name, url, "⚠️ 파싱 오류")
 
-            return make_result(name, url, "⚠️ 요청 실패")
-
-    except requests.exceptions.HTTPError:
-
-        return make_result(name, url, "⚠️ 접속 오류")
-
-    except requests.exceptions.RequestException:
-
-        if attempt == 2:
-            return make_result(name, url, "⚠️ 요청 실패")
-
-    except Exception:
-
-        return make_result(name, url, "⚠️ 파싱 오류")
-
-    except requests.exceptions.Timeout:
-        return make_result(name, url, "⚠️ 타임아웃")
-    except requests.exceptions.HTTPError:
-        return make_result(name, url, "⚠️ 접속 오류")
-    except requests.exceptions.RequestException:
-        return make_result(name, url, "⚠️ 요청 실패")
-    except Exception:
-        return make_result(name, url, "⚠️ 파싱 오류")
-
+    return make_result(name, url, "⚠️ 요청 실패")
+    
 # -------------------------------------------------
 # 표시 / 엑셀 유틸
 # -------------------------------------------------
@@ -1126,6 +1115,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
