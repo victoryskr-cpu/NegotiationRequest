@@ -868,16 +868,21 @@ def run_checks(target_sites):
     completed_count = 0
 
     status_placeholder = st.empty()
+    current_placeholder = st.empty()
     progress_bar = st.progress(0)
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_map = {
-            executor.submit(check_site_stable, name, url): (name, url)
-            for name, url in target_sites
-        }
+        future_map = {}
+
+        for name, url in target_sites:
+            current_placeholder.info(f"🔎 검색 요청 등록: {name}")
+            future = executor.submit(check_site_stable, name, url)
+            future_map[future] = (name, url)
 
         for future in as_completed(future_map):
             name, url = future_map[future]
+
+            current_placeholder.info(f"🔎 검색 중: {name}")
 
             try:
                 result = future.result()
@@ -888,18 +893,24 @@ def run_checks(target_sites):
             completed_count += 1
 
             percent = int((completed_count / total_count) * 100)
+
             status_placeholder.markdown(
                 f"<span class='status-text'>⏳ [{percent}%] 총 {total_count}개 중 {completed_count}개 완료</span>",
                 unsafe_allow_html=True
             )
+
+            current_placeholder.success(f"✅ 방금 완료: {name} ({result['상태']})")
+
             progress_bar.progress(completed_count / total_count)
 
     results = sort_results_by_target_order(results, target_sites)
     status_placeholder.success(f"✅ 검사 완료! (총 {len(target_sites)}개)")
+    current_placeholder.empty()
+
     st.session_state["last_results"] = results
     st.session_state["last_run_time"] = datetime.now(ZoneInfo("Asia/Seoul"))
     return results
-
+    
 # -------------------------------------------------
 # 메인 화면 지역 선택
 # -------------------------------------------------
@@ -1071,6 +1082,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
