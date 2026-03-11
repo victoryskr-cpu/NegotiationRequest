@@ -277,7 +277,7 @@ SESSION_HEADERS = {
     )
 }
 
-MAX_WORKERS = 2
+MAX_WORKERS = 1
 ERROR_STATUSES = {"⚠️ 타임아웃", "⚠️ 접속 오류", "⚠️ 요청 실패", "⚠️ 파싱 오류", "⚠️ 실행 오류"}
 
 def create_session():
@@ -1060,4 +1060,5 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
