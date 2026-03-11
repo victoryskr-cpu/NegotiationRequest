@@ -242,6 +242,7 @@ manual_data = [
     ["경북_포항", "https://www.pohang.go.kr/portal/saeol/gosi/list.do?mid=0202010000"],
     ["충남_공주", "https://www.gongju.go.kr/prog/saeolGosi/GOSI_01/sub04_03_01/list.do"],
     ["충남_당진", "https://www.dangjin.go.kr/kor/sub03_02_01_01.do"],
+    ["충남_보령", "https://www.brcn.go.kr/prog/eminwon/kor/BB/sub04_03_01/list.do"],
     ["충남_천안", "https://www.cheonan.go.kr/kor/sub02_02_01.do"],
     ["충북_괴산", "https://www.goesan.go.kr/www/selectBbsNttList.do?key=604"],
     ["충북_단양", "https://www.danyang.go.kr/dy21/976"],
@@ -1124,6 +1125,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
