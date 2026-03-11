@@ -8,6 +8,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urljoin
 import re
 from io import BytesIO
+import time
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # -------------------------------------------------
 # 기본 설정
@@ -165,7 +168,7 @@ raw_target_data = {
     "대구광역시": [
         ["대구_동구", "https://www.dong.daegu.kr/portal/saeol/gosi/list.do?mid=0201020000&searchKrwd=%EA%B5%90%EC%84%AD"],
         ["대구_달서구", "https://www.dalseo.daegu.kr/index.do?menu_id=10000104&searchKey=sj&searchKeyword=%EA%B5%90%EC%84%AD"],
-        ["대구_중구", "https://www.jung.daegu.kr/new/pages/administration/page.html?mc=0159&search_key=sj&search_keyword=%EA%B5%90%EC%84%AD"]
+        ["대구_중구", "https://www.jung.daegu.kr/new/pages/administration/page.html?mc=0159"],
     ],
     "울산광역시": [
         ["울산광역시", "https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan?mId=001004002000000000"]
@@ -195,14 +198,14 @@ raw_target_data = {
         ["경남_함안", "https://www.haman.go.kr/00960/00962.web?stype=title&sstring=%EA%B5%90%EC%84%AD"]
     ],
     "충청남도": [
-        ["충청남도", "https://www.chungnam.go.kr/cnportal/province/province/list.do?searchWrd=%EA%B5%90%EC%84%AD"],
+        ["충청남도", "https://www.chungnam.go.kr/cnportal/province/province/list.do?menuNo=500487&searchCnd=1&searchWrd=%EA%B5%90%EC%84%AD"],
         ["충남_서산", "https://www.seosan.go.kr/www/contents.do?key=1258"],
         ["충남_아산", "https://www.asan.go.kr/main/cms/?no=257"],
         ["충남_논산", "https://nonsan.go.kr/kor/html/sub03/03010201.html"]
     ],
     "충청북도": [
         ["충청북도", "https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422&searchKrwd=%EA%B5%90%EC%84%AD"],
-        ["충북_괴산", "https://www.goesan.go.kr/www/selectBbsNttList.do?key=604&searchCnd=SJ&searchKrwd=교섭"],
+        ["충북_괴산", "https://www.goesan.go.kr/www/selectBbsNttList.do?key=604"],
         ["충북_보은", "https://www.boeun.go.kr/www/selectBbsNttList.do?key=194&bbsNo=66&searchCnd=SJ&searchKrwd=교섭"],
         ["충북_옥천", "https://www.oc.go.kr/www/selectBbsNttList.do?key=236&bbsNo=40&searchCnd=SJ&searchKrwd=교섭"],
         ["충북_음성", "https://www.eumseong.go.kr/www/selectEminwonList.do?key=352&searchCnd=B_Subject&searchKrwd=교섭"],
@@ -278,8 +281,30 @@ MAX_WORKERS = 2
 ERROR_STATUSES = {"⚠️ 타임아웃", "⚠️ 접속 오류", "⚠️ 요청 실패", "⚠️ 파싱 오류", "⚠️ 실행 오류"}
 
 def create_session():
+
     session = requests.Session()
-    session.headers.update(SESSION_HEADERS)
+
+    session.headers.update({
+        "User-Agent": SESSION_HEADERS["User-Agent"],
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8",
+        "Connection": "keep-alive"
+    })
+
+    retry = Retry(
+        total=2,
+        connect=2,
+        read=2,
+        backoff_factor=1.2,
+        status_forcelist=[429,500,502,503,504],
+        allowed_methods=["GET","POST"]
+    )
+
+    adapter = HTTPAdapter(max_retries=retry)
+
+    session.mount("http://",adapter)
+    session.mount("https://",adapter)
+
     return session
 
 def make_result(name, search_url, status, detected_date="", detected_title="", detected_link=""):
@@ -659,11 +684,59 @@ def check_site_stable(name: str, url: str):
     session = create_session()
 
     try:
-        response = session.get(url, timeout=15)
+for attempt in range(3):
+
+    try:
+
+        time.sleep(0.4 * attempt)
+
+        response = session.get(
+            url,
+            timeout=(10,25),
+            allow_redirects=True
+        )
+
         response.raise_for_status()
         response.encoding = response.apparent_encoding or response.encoding
 
         return analyze_response_text(name, url, response.text)
+
+    except requests.exceptions.Timeout:
+
+        if attempt == 2:
+            return make_result(name, url, "⚠️ 타임아웃")
+
+    except requests.exceptions.SSLError:
+
+        try:
+            response = session.get(
+                url,
+                timeout=(10,25),
+                verify=False
+            )
+
+            response.raise_for_status()
+
+            response.encoding = response.apparent_encoding or response.encoding
+
+            return analyze_response_text(name, url, response.text)
+
+        except Exception:
+
+            return make_result(name, url, "⚠️ 요청 실패")
+
+    except requests.exceptions.HTTPError:
+
+        return make_result(name, url, "⚠️ 접속 오류")
+
+    except requests.exceptions.RequestException:
+
+        if attempt == 2:
+            return make_result(name, url, "⚠️ 요청 실패")
+
+    except Exception:
+
+        return make_result(name, url, "⚠️ 파싱 오류")
 
     except requests.exceptions.Timeout:
         return make_result(name, url, "⚠️ 타임아웃")
@@ -987,3 +1060,4 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
