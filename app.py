@@ -908,35 +908,8 @@ for region in sort_order:
 if "main_all_regions" not in st.session_state:
     st.session_state["main_all_regions"] = False
 
-# -------------------------------------------------
-# 메인 화면 지역 선택
-# -------------------------------------------------
-def toggle_region_selector():
-    st.session_state["region_selector_open"] = not st.session_state["region_selector_open"]
+selected_regions = []
 
-def on_all_clicked():
-    checked = st.session_state["main_all_regions"]
-    for region in sort_order:
-        st.session_state[f"main_region_{region}"] = checked
-
-def on_region_clicked():
-    all_selected = True
-    for region in sort_order:
-        if len(target_data.get(region, [])) > 0 and not st.session_state.get(f"main_region_{region}", False):
-            all_selected = False
-            break
-    st.session_state["main_all_regions"] = all_selected
-
-total_target_count = sum(len(target_data.get(region, [])) for region in sort_order)
-
-for region in sort_order:
-    if f"main_region_{region}" not in st.session_state:
-        st.session_state[f"main_region_{region}"] = False
-
-if "main_all_regions" not in st.session_state:
-    st.session_state["main_all_regions"] = False
-
-# 처음 화면에는 지역 선택 버튼만 표시
 st.button(
     "검색할 지역 선택",
     use_container_width=True,
@@ -954,7 +927,6 @@ if st.session_state["region_selector_open"]:
     )
 
     region_cols = st.columns(2)
-    selected_regions = []
 
     for idx, region in enumerate(sort_order):
         count = len(target_data[region])
@@ -969,7 +941,6 @@ if st.session_state["region_selector_open"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # 하나 이상 선택된 경우에만 시작 버튼 표시
     if selected_regions:
         run_clicked = st.button(
             "선택 지역 자동 확인 시작",
@@ -979,45 +950,10 @@ if st.session_state["region_selector_open"]:
         run_clicked = False
 
 else:
-    selected_regions = [
-        region for region in sort_order
-        if st.session_state.get(f"main_region_{region}", False) and len(target_data[region]) > 0
-    ]
+    for region in sort_order:
+        if st.session_state.get(f"main_region_{region}", False) and len(target_data[region]) > 0:
+            selected_regions.append(region)
     run_clicked = False
-
-target_sites = []
-for reg in selected_regions:
-    target_sites.extend(target_data[reg])
-if st.session_state["region_selector_open"]:
-    st.markdown('<div class="selector-box">', unsafe_allow_html=True)
-    st.markdown('<div class="selector-title">검색할 지역을 선택하세요</div>', unsafe_allow_html=True)
-
-    st.checkbox(
-        f"전체 지역 선택 ({total_target_count})",
-        key="main_all_regions",
-        on_change=on_all_clicked
-    )
-
-    region_cols = st.columns(2)
-    selected_regions = []
-
-    for idx, region in enumerate(sort_order):
-        count = len(target_data[region])
-        with region_cols[idx % 2]:
-            checked = st.checkbox(
-                f"{region} ({count})",
-                key=f"main_region_{region}",
-                on_change=on_region_clicked
-            )
-            if checked and count > 0:
-                selected_regions.append(region)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-else:
-    selected_regions = [
-        region for region in sort_order
-        if st.session_state.get(f"main_region_{region}", False) and len(target_data[region]) > 0
-    ]
 
 target_sites = []
 for reg in selected_regions:
@@ -1115,6 +1051,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
