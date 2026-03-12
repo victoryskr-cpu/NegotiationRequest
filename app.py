@@ -1393,7 +1393,7 @@ if run_clicked:
 # -------------------------------------------------
 if st.session_state["last_results"]:
     results = st.session_state["last_results"]
-    df_display = make_display_dataframe(results)
+    grouped_html = make_grouped_display_html(results)
 
     st.download_button(
         label="📥 결과 엑셀 내려받기",
@@ -1403,10 +1403,10 @@ if st.session_state["last_results"]:
     )
 
     st.write(
-        df_display.to_html(escape=False, index=False, classes="result-table"),
+        grouped_html,
         unsafe_allow_html=True
     )
-
+    
     error_sites = [
         (row["지자체명"], row["검색링크"])
         for row in results
@@ -1466,6 +1466,7 @@ for region, sites in manual_grouped.items():
             region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
             region_df["링크"] = region_df["링크"].apply(lambda x: make_clickable_link(x, "이동하여 검색"))
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
