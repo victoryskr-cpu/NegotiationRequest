@@ -287,7 +287,14 @@ if "last_run_time" not in st.session_state:
 # 유틸
 # -------------------------------------------------
 MAX_WORKERS = 3
-ERROR_STATUSES = {"⚠️ 타임아웃", "⚠️ 접속 오류", "⚠️ 요청 실패", "⚠️ 파싱 오류", "⚠️ 실행 오류"}
+ERROR_STATUSES = {
+    "⚠️ 타임아웃",
+    "⚠️ 접속 오류",
+    "⚠️ 요청 실패",
+    "⚠️ 파싱 오류",
+    "⚠️ 실행 오류",
+    "⚠️ 수동 확인",
+}
 
 def create_session():
     session = requests.Session()
@@ -1487,6 +1494,7 @@ for region, sites in manual_grouped.items():
             region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
             region_df["링크"] = region_df["링크"].apply(lambda x: make_clickable_link(x, "이동하여 검색"))
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
