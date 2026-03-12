@@ -838,63 +838,49 @@ def check_namyangju(name: str, url: str):
         return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
 
 def check_seongbuk(name: str, url: str):
-
     session = create_session()
 
     try:
-        base = "https://www.sb.go.kr"
-
-        # 1단계: 메인 페이지 먼저 방문 (세션 생성)
-        session.get(
-            base + "/www/selectEminwonList.do?key=6977",
-            timeout=(3, 5)
-        )
-
-        # 2단계: 검색 요청
+        search_url = "https://www.sb.go.kr/www/selectEminwonList.do"
         params = {
-            "key": "6977",
-            "searchCnd": "all",
-            "depNm": "",
-            "searchCnd2": "notAncmtSj",
             "pageUnit": "10",
-            "bgnde": "",
-            "endde": "",
-            "searchKrwd": "교섭"
+            "pageIndex": "1",
+            "searchCnd": "all",
+            "searchKrwd": "교섭",
+            "searchCnd2": "notAncmtSj",
+            "depNm": "",
+            "key": "6977",
+        }
+
+        headers = {
+            "Referer": "https://www.sb.go.kr/www/selectEminwonList.do?key=6977",
+            "User-Agent": "Mozilla/5.0"
         }
 
         response = session.get(
-            base + "/www/selectEminwonList.do",
+            search_url,
             params=params,
-            timeout=(3, 5)
+            headers=headers,
+            timeout=(3, 6),
+            allow_redirects=True
         )
-
-        response.raise_for_status()
-        response.encoding = response.apparent_encoding
-
-        html = response.text
-
-        return analyze_response_text(name, response.url, html)
-
-    except requests.exceptions.Timeout:
-        return make_result(name, url, "⚠️ 타임아웃")
-
-    except Exception as e:
-        return make_result(name, url, "⚠️ 오류", "", str(e)[:120], "")
-
-def check_chungju(name: str, url: str):
-    session = create_session()
-    try:
-        response = session.get(url, timeout=(8, 20), allow_redirects=True)
         response.raise_for_status()
         response.encoding = response.apparent_encoding or response.encoding
-        print("[STATUS]", name, response.status_code)
-        print("[URL]", name, response.url)
+
         html = response.text
-        if "내용:" in html or "alert(" in html.lower():
-            return make_result(name, url, "⚪ 결과 없음", "", "", "")
-        return analyze_response_text(name, url, html)
+
+        print("===== 성북 디버그 =====")
+        print("URL:", response.url)
+        print("HTML 길이:", len(html))
+
+        # 소스에 실제 결과가 있는지 한번 더 확인
+        if "selectEminwonView.do" in html and "교섭" in html:
+            return analyze_response_text(name, response.url, html)
+
+        return make_result(name, url, "⚠️ 수동 확인", "", "", "")
+
     except requests.exceptions.Timeout:
-        return make_result(name, url, "⚠️ 타임아웃")
+        return make_result(name, url, "⚠️ 수동 확인", "", "", "")
     except requests.exceptions.HTTPError:
         return make_result(name, url, "⚠️ 접속 오류")
     except requests.exceptions.RequestException:
@@ -1501,6 +1487,7 @@ for region, sites in manual_grouped.items():
             region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
             region_df["링크"] = region_df["링크"].apply(lambda x: make_clickable_link(x, "이동하여 검색"))
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
