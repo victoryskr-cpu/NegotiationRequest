@@ -1107,29 +1107,83 @@ def run_checks(target_sites):
 def toggle_region_selector():
     st.session_state["region_selector_open"] = not st.session_state["region_selector_open"]
 
-def on_all_clicked():
-    checked = st.session_state["main_all_regions"]
-    for region in sort_order:
-        st.session_state[f"main_region_{region}"] = checked
+def get_sites_for_region(region_name):
+    auto_sites = get_auto_manual_sites_by_selected_regions([region_name])
+    base_sites = list(target_data.get(region_name, []))
 
-def on_region_clicked():
-    all_selected = True
-    for region in sort_order:
-        if len(target_data.get(region, [])) > 0 and not st.session_state.get(f"main_region_{region}", False):
-            all_selected = False
-            break
-    st.session_state["main_all_regions"] = all_selected
+    dedup_map = {}
+    for name, url in base_sites + auto_sites:
+        dedup_map[name] = url
 
-total_target_count = sum(len(target_data.get(region, [])) for region in sort_order)
+    merged_sites = list(dedup_map.items())
+
+    region_prefix_map = {
+        "서울특별시": "서울",
+        "부산광역시": "부산",
+        "대구광역시": "대구",
+        "울산광역시": "울산",
+        "강원도": "강원",
+        "경기도": "경기",
+        "전북특별자치도": "전북",
+        "경상북도": "경북",
+        "경상남도": "경남",
+        "충청남도": "충남",
+        "충청북도": "충북",
+    }
+
+    region_prefix = region_prefix_map.get(region_name, region_name)
+
+    regional_head = []
+    locals_list = []
+
+    for name, url in merged_sites:
+        if "_" not in name:
+            regional_head.append((name, url))
+        elif name.startswith(region_prefix + "_"):
+            locals_list.append((name, url))
+        else:
+            locals_list.append((name, url))
+
+    regional_head = sorted(regional_head, key=lambda x: x[0])
+    locals_list = sorted(locals_list, key=lambda x: x[0])
+
+    return regional_head + locals_list
+
+def format_site_label(site_name):
+    if site_name in AUTOMATED_MANUAL_SITE_NAMES:
+        return f"{site_name} (manual 자동화)"
+    return site_name
+
+def on_region_group_all_clicked(region_name):
+    checked = st.session_state.get(f"region_all_{region_name}", False)
+    for site_name, _ in get_sites_for_region(region_name):
+        st.session_state[f"site_{site_name}"] = checked
+
+def sync_region_all_state(region_name):
+    sites = get_sites_for_region(region_name)
+    if not sites:
+        st.session_state[f"region_all_{region_name}"] = False
+        return
+
+    all_checked = all(
+        st.session_state.get(f"site_{site_name}", False)
+        for site_name, _ in sites
+    )
+    st.session_state[f"region_all_{region_name}"] = all_checked
+
+total_target_count = 0
+for region in sort_order:
+    total_target_count += len(get_sites_for_region(region))
 
 for region in sort_order:
-    if f"main_region_{region}" not in st.session_state:
-        st.session_state[f"main_region_{region}"] = False
+    if f"region_all_{region}" not in st.session_state:
+        st.session_state[f"region_all_{region}"] = False
 
-if "main_all_regions" not in st.session_state:
-    st.session_state["main_all_regions"] = False
+    for site_name, _ in get_sites_for_region(region):
+        if f"site_{site_name}" not in st.session_state:
+            st.session_state[f"site_{site_name}"] = False
 
-selected_regions = []
+selected_sites = []
 
 st.button(
     "검색할 지역 선택",
@@ -1141,48 +1195,70 @@ if st.session_state["region_selector_open"]:
     st.markdown('<div class="selector-box">', unsafe_allow_html=True)
     st.markdown('<div class="selector-title">검색할 지역을 선택하세요</div>', unsafe_allow_html=True)
 
-    st.checkbox(
-        f"전체 지역 선택 ({total_target_count})",
-        key="main_all_regions",
-        on_change=on_all_clicked
-    )
+    for region in sort_order:
+        region_sites = get_sites_for_region(region)
+        if not region_sites:
+            continue
 
-    region_cols = st.columns(2)
+        sync_region_all_state(region)
 
-    for idx, region in enumerate(sort_order):
-        count = len(target_data[region])
-        with region_cols[idx % 2]:
-            checked = st.checkbox(
-                f"{region} ({count})",
-                key=f"main_region_{region}",
-                on_change=on_region_clicked
+        with st.expander(f"{region} ({len(region_sites)})", expanded=False):
+            st.checkbox(
+                f"{region} 전체 선택",
+                key=f"region_all_{region}",
+                on_change=on_region_group_all_clicked,
+                args=(region,)
             )
-            if checked and count > 0:
-                selected_regions.append(region)
+
+            regional_head = []
+            local_sites = []
+
+            for site_name, site_url in region_sites:
+                if "_" not in site_name:
+                    regional_head.append((site_name, site_url))
+                else:
+                    local_sites.append((site_name, site_url))
+
+            if regional_head:
+                st.markdown("**광역본청**")
+                for site_name, site_url in regional_head:
+                    checked = st.checkbox(
+                        format_site_label(site_name),
+                        key=f"site_{site_name}"
+                    )
+                    if checked:
+                        selected_sites.append((site_name, site_url))
+
+            if local_sites:
+                st.markdown("**기초단체 / 개별기관**")
+                for site_name, site_url in local_sites:
+                    checked = st.checkbox(
+                        format_site_label(site_name),
+                        key=f"site_{site_name}"
+                    )
+                    if checked:
+                        selected_sites.append((site_name, site_url))
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    if selected_regions:
-        run_clicked = st.button("선택 지역 자동 확인 시작", use_container_width=True)
+    if selected_sites:
+        run_clicked = st.button(
+            "선택 지역 자동 확인 시작",
+            use_container_width=True
+        )
     else:
         run_clicked = False
 else:
     for region in sort_order:
-        if st.session_state.get(f"main_region_{region}", False) and len(target_data[region]) > 0:
-            selected_regions.append(region)
+        for site_name, site_url in get_sites_for_region(region):
+            if st.session_state.get(f"site_{site_name}", False):
+                selected_sites.append((site_name, site_url))
     run_clicked = False
 
-target_sites = []
-for reg in selected_regions:
-    target_sites.extend(target_data[reg])
-
-target_sites.extend(get_auto_manual_sites_by_selected_regions(selected_regions))
-
 dedup_map = {}
-for name, url in target_sites:
+for name, url in selected_sites:
     dedup_map[name] = url
 target_sites = list(dedup_map.items())
-
 # -------------------------------------------------
 # 검색 실행
 # -------------------------------------------------
@@ -1270,3 +1346,4 @@ for region, sites in manual_grouped.items():
             region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
             region_df["링크"] = region_df["링크"].apply(lambda x: make_clickable_link(x, "이동하여 검색"))
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
