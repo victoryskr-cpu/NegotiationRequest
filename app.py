@@ -256,11 +256,6 @@ manual_data = [
 # manual_data 자동화 대상 (1차: eminwon 계열)
 # -------------------------------------------------
 MANUAL_EMINWON_CONFIG = {
-    "충북_충주": {
-        "list_url": "https://www.chungju.go.kr/www/selectEminwonList.do?key=510&ancmt_sj=교섭",
-        "params": {},
-        "title_hint": "교섭"
-    },
     "충북_청주": {
         "list_url": "https://www.cheongju.go.kr/www/selectEminwonNoticeList.do",
         "params": {
@@ -269,29 +264,13 @@ MANUAL_EMINWON_CONFIG = {
         },
         "title_hint": "교섭"
     },
-    "경기_남양주": {
-        "list_url": "https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492&searchKrwd=교섭",
-        "params": {},
-        "title_hint": "교섭"
-    },
-    "서울_성북": {
-        "list_url": "https://www.sb.go.kr/www/selectEminwonList.do",
-        "params": {
-            "key": "6977",
-            "searchCnd2": "notAncmtSj",
-            "searchKrwd": "교섭",
-        },
-        "title_hint": "교섭"
-    }
 }
 
 AUTOMATED_MANUAL_SITE_NAMES = set(MANUAL_EMINWON_CONFIG.keys())
-
-target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
-
-manual_sites = sorted(
-    [row for row in manual_data if row[0] not in AUTOMATED_MANUAL_SITE_NAMES],
-    key=lambda x: x[0]
+    "충북_청주",
+    "충북_충주",
+    "경기_남양주",
+    "서울_성북",
 )
 
 automated_manual_sites = sorted(
@@ -969,11 +948,108 @@ def check_ulsan_metropolitan(name: str, url: str):
     except Exception:
         return make_result(name, url, "⚠️ 파싱 오류")
 
+def check_namyangju(name: str, url: str):
+    session = create_session()
+
+    try:
+        # 사용자가 실제로 쓰는 검색 결과 URL을 직접 호출
+        search_url = "https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492&searchKrwd=교섭"
+
+        response = session.get(
+            search_url,
+            timeout=(6, 15),
+            allow_redirects=True
+        )
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding or response.encoding
+
+        print("[STATUS]", name, response.status_code)
+        print("[URL]", name, response.url)
+
+        return analyze_response_text(name, search_url, response.text)
+
+    except requests.exceptions.Timeout:
+        return make_result(name, url, "⚠️ 타임아웃")
+    except requests.exceptions.HTTPError:
+        return make_result(name, url, "⚠️ 접속 오류")
+    except requests.exceptions.RequestException:
+        return make_result(name, url, "⚠️ 요청 실패")
+    except Exception as e:
+        return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
+
+def check_seongbuk(name: str, url: str):
+    session = create_session()
+
+    try:
+        response = session.get(
+            url,
+            timeout=(12, 30),
+            allow_redirects=True
+        )
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding or response.encoding
+
+        print("[STATUS]", name, response.status_code)
+        print("[URL]", name, response.url)
+
+        return analyze_response_text(name, url, response.text)
+
+    except requests.exceptions.Timeout:
+        return make_result(name, url, "⚠️ 타임아웃")
+    except requests.exceptions.HTTPError:
+        return make_result(name, url, "⚠️ 접속 오류")
+    except requests.exceptions.RequestException:
+        return make_result(name, url, "⚠️ 요청 실패")
+    except Exception as e:
+        return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
+
+def check_chungju(name: str, url: str):
+    session = create_session()
+
+    try:
+        response = session.get(
+            url,
+            timeout=(8, 20),
+            allow_redirects=True
+        )
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding or response.encoding
+
+        print("[STATUS]", name, response.status_code)
+        print("[URL]", name, response.url)
+
+        html = response.text
+
+        # 팝업/스크립트성 응답이면 상세링크 추출보다 텍스트 분석만 사용
+        if "내용:" in html or "alert(" in html.lower():
+            return make_result(name, url, "⚪ 결과 없음", "", "", "")
+
+        return analyze_response_text(name, url, html)
+
+    except requests.exceptions.Timeout:
+        return make_result(name, url, "⚠️ 타임아웃")
+    except requests.exceptions.HTTPError:
+        return make_result(name, url, "⚠️ 접속 오류")
+    except requests.exceptions.RequestException:
+        return make_result(name, url, "⚠️ 요청 실패")
+    except Exception as e:
+        return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
+
+
 # -------------------------------------------------
 # 공통 검사 함수
 # -------------------------------------------------
 def check_site_stable(name: str, url: str):
-    if name in MANUAL_EMINWON_CONFIG:
+    if name == "경기_남양주":
+        return check_namyangju(name, url)
+
+    if name == "서울_성북":
+        return check_seongbuk(name, url)
+
+    if name == "충북_충주":
+        return check_chungju(name, url)
+
+    if name == "충북_청주":
         return check_manual_eminwon(name, url)
 
     if name == "경상남도" or "gyeongnam.go.kr/index.gyeong" in url:
@@ -1040,7 +1116,7 @@ def check_site_stable(name: str, url: str):
             return make_result(name, url, "⚠️ 파싱 오류")
 
     return make_result(name, url, "⚠️ 요청 실패")
-
+    
 # -------------------------------------------------
 # 표시 / 엑셀 유틸
 # -------------------------------------------------
@@ -1422,6 +1498,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
