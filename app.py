@@ -252,29 +252,6 @@ manual_data = [
     ["충북_충주", "https://www.chungju.go.kr/www/selectEminwonList.do?key=510&ancmt_sj=%EA%B5%90%EC%84%AD"]
 ]
 
-target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
-manual_sites = sorted(
-    [row for row in manual_data if row[0] not in AUTOMATED_MANUAL_SITE_NAMES],
-    key=lambda x: x[0]
-)
-
-automated_manual_sites = sorted(
-    [row for row in manual_data if row[0] in AUTOMATED_MANUAL_SITE_NAMES],
-    key=lambda x: x[0]
-)
-
-# -------------------------------------------------
-# 세션 상태 초기화
-# -------------------------------------------------
-if "region_selector_open" not in st.session_state:
-    st.session_state["region_selector_open"] = False
-
-if "last_results" not in st.session_state:
-    st.session_state["last_results"] = []
-
-if "last_run_time" not in st.session_state:
-    st.session_state["last_run_time"] = None
-
 # -------------------------------------------------
 # manual_data 자동화 대상 (1차: eminwon 계열)
 # -------------------------------------------------
@@ -316,6 +293,29 @@ MANUAL_EMINWON_CONFIG = {
 
 AUTOMATED_MANUAL_SITE_NAMES = set(MANUAL_EMINWON_CONFIG.keys())
 
+target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
+
+manual_sites = sorted(
+    [row for row in manual_data if row[0] not in AUTOMATED_MANUAL_SITE_NAMES],
+    key=lambda x: x[0]
+)
+
+automated_manual_sites = sorted(
+    [row for row in manual_data if row[0] in AUTOMATED_MANUAL_SITE_NAMES],
+    key=lambda x: x[0]
+)
+
+# -------------------------------------------------
+# 세션 상태 초기화
+# -------------------------------------------------
+if "region_selector_open" not in st.session_state:
+    st.session_state["region_selector_open"] = False
+
+if "last_results" not in st.session_state:
+    st.session_state["last_results"] = []
+
+if "last_run_time" not in st.session_state:
+    st.session_state["last_run_time"] = None
 
 # -------------------------------------------------
 # 유틸
@@ -332,7 +332,6 @@ MAX_WORKERS = 3
 ERROR_STATUSES = {"⚠️ 타임아웃", "⚠️ 접속 오류", "⚠️ 요청 실패", "⚠️ 파싱 오류", "⚠️ 실행 오류"}
 
 def create_session():
-
     session = requests.Session()
 
     session.headers.update({
@@ -347,14 +346,13 @@ def create_session():
         connect=2,
         read=2,
         backoff_factor=1.2,
-        status_forcelist=[429,500,502,503,504],
-        allowed_methods=["GET","POST"]
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET", "POST"]
     )
 
     adapter = HTTPAdapter(max_retries=retry)
-
-    session.mount("http://",adapter)
-    session.mount("https://",adapter)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
 
     return session
 
@@ -583,11 +581,9 @@ def extract_best_post_link(html: str, base_url: str, keyword: str = "교섭", pr
 
         link = extract_link_from_tag(tag, base_url)
 
-        # 상세링크가 없으면 후보에서 제외
         if not link:
             continue
 
-        # 검색결과 페이지와 같은 링크는 상세링크로 보지 않음
         if link.strip() == base_url.strip():
             continue
 
@@ -639,7 +635,6 @@ def is_meaningful_title(text: str, keyword: str = "교섭"):
 
     return True
 
-
 def extract_rows_from_soup(soup: BeautifulSoup):
     rows = []
 
@@ -654,7 +649,6 @@ def extract_rows_from_soup(soup: BeautifulSoup):
             rows.append(("li", li, row_text))
 
     return rows
-
 
 def find_best_anchor_in_container(container, base_url: str, keyword: str = "교섭"):
     best_link = ""
@@ -691,29 +685,6 @@ def find_best_anchor_in_container(container, base_url: str, keyword: str = "교�
             best_title = text
 
     return best_title, best_link
-
-
-def build_detail_link_from_onclick(tag, base_url: str):
-    onclick = (tag.get("onclick") or "").strip()
-    if not onclick:
-        return ""
-
-    patterns = [
-        r"""goView\(['"]?(\d+)['"]?\)""",
-        r"""fnView\(['"]?(\d+)['"]?\)""",
-        r"""fn_detail\(['"]?(\d+)['"]?\)""",
-        r"""detailView\(['"]?(\d+)['"]?\)""",
-        r"""view\(['"]?(\d+)['"]?\)""",
-    ]
-
-    for pattern in patterns:
-        match = re.search(pattern, onclick)
-        if match:
-            value = match.group(1)
-            if value:
-                return urljoin(base_url, f"?id={value}")
-
-    return ""
 
 def analyze_response_text(name: str, url: str, text: str):
     lines = extract_text_lines(text)
@@ -873,7 +844,6 @@ def check_manual_eminwon(name: str, url: str):
                 detected_date = extract_date_from_text(near_text)
 
             if not anchor_link:
-                # fallback
                 anchor_link = extract_best_post_link(
                     html,
                     response.url,
@@ -889,50 +859,47 @@ def check_manual_eminwon(name: str, url: str):
             })
 
         if matched_items:
-            # 교섭요구/공고/날짜 존재 우선
-
             matched_items.sort(
-              key=lambda x: (
-                  0 if "교섭요구" in x["title"] else 1,
-                  0 if "공고" in x["title"] else 1,
-                  0 if x["date"] else 1,
-                  -len(x["title"])
-              )
-          )
+                key=lambda x: (
+                    0 if "교섭요구" in x["title"] else 1,
+                    0 if "공고" in x["title"] else 1,
+                    0 if x["date"] else 1,
+                    -len(x["title"])
+                )
+            )
 
-          top = matched_items[0]
+            top = matched_items[0]
 
-          debug_manual_result(
-              name,
-              response.url,
-              len(matched_items),
-              top["title"],
-              top["link"],
-              top["date"]
-          )
-      
-          if top["date"]:
-              normalized = normalize_date_string(top["date"])
-              try:
-                  top_dt = datetime.strptime(normalized, "%Y-%m-%d").date()
-                  today = datetime.now(ZoneInfo("Asia/Seoul")).date()
-                  days_diff = (today - top_dt).days
-                  status = "🔴 신규" if 0 <= days_diff <= 7 else "🟡 기존 공고"
-              except Exception:
-                  status = "🟡 기존 공고"
-          else:
-              status = "🟡 기존 공고"
+            debug_manual_result(
+                name,
+                response.url,
+                len(matched_items),
+                top["title"],
+                top["link"],
+                top["date"]
+            )
 
-          return make_result(
-              name,
-              url,
-              status,
-              top["date"],
-              top["title"],
-              top["link"]
-          )
+            if top["date"]:
+                normalized = normalize_date_string(top["date"])
+                try:
+                    top_dt = datetime.strptime(normalized, "%Y-%m-%d").date()
+                    today = datetime.now(ZoneInfo("Asia/Seoul")).date()
+                    days_diff = (today - top_dt).days
+                    status = "🔴 신규" if 0 <= days_diff <= 7 else "🟡 기존 공고"
+                except Exception:
+                    status = "🟡 기존 공고"
+            else:
+                status = "🟡 기존 공고"
 
-        # 구조가 달라도 페이지 전체 분석 fallback
+            return make_result(
+                name,
+                url,
+                status,
+                top["date"],
+                top["title"],
+                top["link"]
+            )
+
         fallback_result = analyze_response_text(name, response.url, html)
         if fallback_result["상태"] != "⚪ 결과 없음":
             return fallback_result
@@ -978,7 +945,6 @@ def check_ulsan_metropolitan(name: str, url: str):
 # 공통 검사 함수
 # -------------------------------------------------
 def check_site_stable(name: str, url: str):
-    # 1차 manual 자동화 대상 우선 처리
     if name in MANUAL_EMINWON_CONFIG:
         return check_manual_eminwon(name, url)
 
@@ -990,9 +956,6 @@ def check_site_stable(name: str, url: str):
 
     if name == "울산광역시" or "ulsan.go.kr/u/rep/transfer/notice/list.ulsan" in url:
         return check_ulsan_metropolitan(name, url)
-
-    session = create_session()
-    ...
 
     session = create_session()
 
@@ -1049,7 +1012,7 @@ def check_site_stable(name: str, url: str):
             return make_result(name, url, "⚠️ 파싱 오류")
 
     return make_result(name, url, "⚠️ 요청 실패")
-    
+
 # -------------------------------------------------
 # 표시 / 엑셀 유틸
 # -------------------------------------------------
@@ -1063,7 +1026,6 @@ def get_display_link_text(row):
     detected_link = (row.get("감지링크") or "").strip()
     search_url = (row.get("검색링크") or "").strip()
 
-    # 1) 상세링크를 신뢰하지 않을 사이트들
     force_search_only = {
         "강원특별자치도",
         "경남_김해",
@@ -1075,13 +1037,11 @@ def get_display_link_text(row):
             return make_clickable_link(search_url, "검색결과 보기")
         return ""
 
-    # 2) 감지링크가 없거나 검색링크와 같으면 검색결과 보기
     if not detected_link or detected_link == search_url:
         if search_url:
             return make_clickable_link(search_url, "검색결과 보기")
         return ""
 
-    # 3) 이상한 링크 필터링
     bad_prefixes = (
         "javascript:",
         "intent:",
@@ -1093,7 +1053,6 @@ def get_display_link_text(row):
             return make_clickable_link(search_url, "검색결과 보기")
         return ""
 
-    # 4) 정상 상세링크만 게시물로 이동
     return make_clickable_link(detected_link, "게시물로 이동")
 
 def make_display_dataframe(results):
@@ -1164,10 +1123,10 @@ def to_excel(results):
 
     return output.getvalue()
 
-def group_manual_sites(manual_sites):
+def group_manual_sites(manual_sites_list):
     grouped = {}
 
-    for name, url in manual_sites:
+    for name, url in manual_sites_list:
         if "_" in name:
             region_key = name.split("_")[0]
         else:
@@ -1248,7 +1207,6 @@ def run_checks(target_sites):
             )
 
             current_placeholder.success(f"✅ 방금 완료: {name} ({result['상태']})")
-
             progress_bar.progress(completed_count / total_count)
 
     results = sort_results_by_target_order(results, target_sites)
@@ -1258,7 +1216,7 @@ def run_checks(target_sites):
     st.session_state["last_results"] = results
     st.session_state["last_run_time"] = datetime.now(ZoneInfo("Asia/Seoul"))
     return results
-    
+
 # -------------------------------------------------
 # 메인 화면 지역 선택
 # -------------------------------------------------
@@ -1327,7 +1285,6 @@ if st.session_state["region_selector_open"]:
         )
     else:
         run_clicked = False
-
 else:
     for region in sort_order:
         if st.session_state.get(f"main_region_{region}", False) and len(target_data[region]) > 0:
@@ -1437,20 +1394,3 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
