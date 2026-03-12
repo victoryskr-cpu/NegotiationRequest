@@ -253,7 +253,15 @@ manual_data = [
 ]
 
 target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
-manual_sites = sorted(manual_data, key=lambda x: x[0])
+manual_sites = sorted(
+    [row for row in manual_data if row[0] not in AUTOMATED_MANUAL_SITE_NAMES],
+    key=lambda x: x[0]
+)
+
+automated_manual_sites = sorted(
+    [row for row in manual_data if row[0] in AUTOMATED_MANUAL_SITE_NAMES],
+    key=lambda x: x[0]
+)
 
 # -------------------------------------------------
 # 세션 상태 초기화
@@ -266,6 +274,48 @@ if "last_results" not in st.session_state:
 
 if "last_run_time" not in st.session_state:
     st.session_state["last_run_time"] = None
+
+# -------------------------------------------------
+# manual_data 자동화 대상 (1차: eminwon 계열)
+# -------------------------------------------------
+MANUAL_EMINWON_CONFIG = {
+    "충북_충주": {
+        "list_url": "https://www.chungju.go.kr/www/selectEminwonList.do",
+        "params": {
+            "key": "510",
+            "ancmt_sj": "교섭",
+        },
+        "title_hint": "교섭"
+    },
+    "충북_청주": {
+        "list_url": "https://www.cheongju.go.kr/www/selectEminwonNoticeList.do",
+        "params": {
+            "key": "281",
+            "searchKrwd": "교섭",
+        },
+        "title_hint": "교섭"
+    },
+    "경기_남양주": {
+        "list_url": "https://www.nyj.go.kr/www/selectEminwonWebList.do",
+        "params": {
+            "key": "2492",
+            "searchKrwd": "교섭",
+        },
+        "title_hint": "교섭"
+    },
+    "서울_성북": {
+        "list_url": "https://www.sb.go.kr/www/selectEminwonList.do",
+        "params": {
+            "key": "6977",
+            "searchCnd2": "notAncmtSj",
+            "searchKrwd": "교섭",
+        },
+        "title_hint": "교섭"
+    }
+}
+
+AUTOMATED_MANUAL_SITE_NAMES = set(MANUAL_EMINWON_CONFIG.keys())
+
 
 # -------------------------------------------------
 # 유틸
@@ -562,6 +612,109 @@ def extract_best_post_link(html: str, base_url: str, keyword: str = "교섭", pr
     candidates.sort(key=lambda x: x[0], reverse=True)
     return candidates[0][1]
 
+def debug_manual_result(name, final_url, matched_count, title="", link="", date=""):
+    print("=" * 80)
+    print(f"[MANUAL DEBUG] {name}")
+    print("FINAL URL:", final_url)
+    print("MATCHED COUNT:", matched_count)
+    print("TITLE:", title)
+    print("DATE:", date)
+    print("LINK:", link)
+    print("=" * 80)
+
+def is_meaningful_title(text: str, keyword: str = "교섭"):
+    if not text:
+        return False
+
+    text = clean_title(text)
+
+    if keyword not in text:
+        return False
+
+    if looks_like_noise(text):
+        return False
+
+    if len(text) < 4:
+        return False
+
+    return True
+
+
+def extract_rows_from_soup(soup: BeautifulSoup):
+    rows = []
+
+    for tr in soup.select("table tr"):
+        row_text = clean_title(tr.get_text(" ", strip=True))
+        if row_text:
+            rows.append(("tr", tr, row_text))
+
+    for li in soup.select("ul li, ol li"):
+        row_text = clean_title(li.get_text(" ", strip=True))
+        if row_text:
+            rows.append(("li", li, row_text))
+
+    return rows
+
+
+def find_best_anchor_in_container(container, base_url: str, keyword: str = "교섭"):
+    best_link = ""
+    best_title = ""
+    best_score = -1
+
+    for a in container.find_all("a"):
+        text = clean_title(a.get_text(" ", strip=True))
+        link = extract_link_from_tag(a, base_url)
+
+        if not link:
+            continue
+
+        if link.strip() == base_url.strip():
+            continue
+
+        score = 0
+
+        if keyword in text:
+            score += 20
+
+        if text and not looks_like_noise(text):
+            score += min(len(text), 40)
+
+        if "교섭요구" in text:
+            score += 20
+
+        if "공고" in text:
+            score += 5
+
+        if score > best_score:
+            best_score = score
+            best_link = link
+            best_title = text
+
+    return best_title, best_link
+
+
+def build_detail_link_from_onclick(tag, base_url: str):
+    onclick = (tag.get("onclick") or "").strip()
+    if not onclick:
+        return ""
+
+    patterns = [
+        r"""goView\(['"]?(\d+)['"]?\)""",
+        r"""fnView\(['"]?(\d+)['"]?\)""",
+        r"""fn_detail\(['"]?(\d+)['"]?\)""",
+        r"""detailView\(['"]?(\d+)['"]?\)""",
+        r"""view\(['"]?(\d+)['"]?\)""",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, onclick)
+        if match:
+            value = match.group(1)
+            if value:
+                return urljoin(base_url, f"?id={value}")
+
+    return ""
+
 def analyze_response_text(name: str, url: str, text: str):
     lines = extract_text_lines(text)
     status, detected_date, detected_title = classify_status_from_lines(lines)
@@ -676,6 +829,125 @@ def check_gyeonggi(name: str, url: str):
     except Exception as e:
         return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120])
 
+def check_manual_eminwon(name: str, url: str):
+    config = MANUAL_EMINWON_CONFIG.get(name)
+    if not config:
+        return None
+
+    session = create_session()
+
+    try:
+        response = session.get(
+            config["list_url"],
+            params=config.get("params", {}),
+            timeout=(5, 10),
+            allow_redirects=True
+        )
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding or response.encoding
+
+        html = response.text
+        soup = BeautifulSoup(html, "html.parser")
+        keyword = config.get("title_hint", "교섭")
+
+        rows = extract_rows_from_soup(soup)
+        matched_items = []
+
+        for row_type, row_obj, row_text in rows:
+            if keyword not in row_text:
+                continue
+
+            detected_date = extract_date_from_text(row_text)
+
+            anchor_title, anchor_link = find_best_anchor_in_container(
+                row_obj,
+                response.url,
+                keyword=keyword
+            )
+
+            detected_title = anchor_title if is_meaningful_title(anchor_title, keyword) else row_text
+            detected_title = clean_title(detected_title)
+
+            if not detected_date:
+                near_text = clean_title(row_obj.get_text(" ", strip=True))
+                detected_date = extract_date_from_text(near_text)
+
+            if not anchor_link:
+                # fallback
+                anchor_link = extract_best_post_link(
+                    html,
+                    response.url,
+                    keyword=keyword,
+                    preferred_title=detected_title
+                )
+
+            matched_items.append({
+                "title": detected_title,
+                "date": detected_date,
+                "link": anchor_link,
+                "row_text": row_text
+            })
+
+        if matched_items:
+            # 교섭요구/공고/날짜 존재 우선
+
+            matched_items.sort(
+              key=lambda x: (
+                  0 if "교섭요구" in x["title"] else 1,
+                  0 if "공고" in x["title"] else 1,
+                  0 if x["date"] else 1,
+                  -len(x["title"])
+              )
+          )
+
+          top = matched_items[0]
+
+          debug_manual_result(
+              name,
+              response.url,
+              len(matched_items),
+              top["title"],
+              top["link"],
+              top["date"]
+          )
+      
+          if top["date"]:
+              normalized = normalize_date_string(top["date"])
+              try:
+                  top_dt = datetime.strptime(normalized, "%Y-%m-%d").date()
+                  today = datetime.now(ZoneInfo("Asia/Seoul")).date()
+                  days_diff = (today - top_dt).days
+                  status = "🔴 신규" if 0 <= days_diff <= 7 else "🟡 기존 공고"
+              except Exception:
+                  status = "🟡 기존 공고"
+          else:
+              status = "🟡 기존 공고"
+
+          return make_result(
+              name,
+              url,
+              status,
+              top["date"],
+              top["title"],
+              top["link"]
+          )
+
+        # 구조가 달라도 페이지 전체 분석 fallback
+        fallback_result = analyze_response_text(name, response.url, html)
+        if fallback_result["상태"] != "⚪ 결과 없음":
+            return fallback_result
+
+        return make_result(name, url, "⚪ 결과 없음")
+
+    except requests.exceptions.Timeout:
+        return make_result(name, url, "⚠️ 타임아웃")
+    except requests.exceptions.HTTPError:
+        return make_result(name, url, "⚠️ 접속 오류")
+    except requests.exceptions.RequestException:
+        return make_result(name, url, "⚠️ 요청 실패")
+    except Exception as e:
+        return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
+
 def check_ulsan_metropolitan(name: str, url: str):
     session = create_session()
 
@@ -706,6 +978,10 @@ def check_ulsan_metropolitan(name: str, url: str):
 # 공통 검사 함수
 # -------------------------------------------------
 def check_site_stable(name: str, url: str):
+    # 1차 manual 자동화 대상 우선 처리
+    if name in MANUAL_EMINWON_CONFIG:
+        return check_manual_eminwon(name, url)
+
     if name == "경상남도" or "gyeongnam.go.kr/index.gyeong" in url:
         return check_gyeongnam(name, url)
 
@@ -714,6 +990,9 @@ def check_site_stable(name: str, url: str):
 
     if name == "울산광역시" or "ulsan.go.kr/u/rep/transfer/notice/list.ulsan" in url:
         return check_ulsan_metropolitan(name, url)
+
+    session = create_session()
+    ...
 
     session = create_session()
 
@@ -901,6 +1180,32 @@ def group_manual_sites(manual_sites):
 
     return grouped
 
+def get_auto_manual_sites_by_selected_regions(selected_regions):
+    matched = []
+
+    region_prefix_map = {
+        "서울특별시": "서울",
+        "부산광역시": "부산",
+        "대구광역시": "대구",
+        "울산광역시": "울산",
+        "강원도": "강원",
+        "경기도": "경기",
+        "전북특별자치도": "전북",
+        "경상북도": "경북",
+        "경상남도": "경남",
+        "충청남도": "충남",
+        "충청북도": "충북",
+    }
+
+    selected_prefixes = {region_prefix_map.get(r, r) for r in selected_regions}
+
+    for name, url in automated_manual_sites:
+        prefix = name.split("_")[0] if "_" in name else name
+        if prefix in selected_prefixes:
+            matched.append((name, url))
+
+    return matched
+
 def sort_results_by_target_order(results, target_sites):
     order_map = {name: i for i, (name, _) in enumerate(target_sites)}
     return sorted(results, key=lambda x: order_map.get(x["지자체명"], 999999))
@@ -1033,6 +1338,13 @@ target_sites = []
 for reg in selected_regions:
     target_sites.extend(target_data[reg])
 
+target_sites.extend(get_auto_manual_sites_by_selected_regions(selected_regions))
+
+dedup_map = {}
+for name, url in target_sites:
+    dedup_map[name] = url
+target_sites = list(dedup_map.items())
+
 # -------------------------------------------------
 # 검색 실행
 # -------------------------------------------------
@@ -1125,6 +1437,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
