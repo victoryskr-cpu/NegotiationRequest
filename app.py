@@ -618,6 +618,14 @@ def debug_manual_result(name, final_url, matched_count, title="", link="", date=
     print("LINK:", link)
     print("=" * 80)
 
+def debug_manual_fetch(name, final_url, row_count, html_length):
+    print("=" * 80)
+    print(f"[MANUAL FETCH] {name}")
+    print("FINAL URL:", final_url)
+    print("ROW COUNT:", row_count)
+    print("HTML LENGTH:", html_length)
+    print("=" * 80)
+
 def is_meaningful_title(text: str, keyword: str = "교섭"):
     if not text:
         return False
@@ -808,10 +816,12 @@ def check_manual_eminwon(name: str, url: str):
     session = create_session()
 
     try:
+        timeout_value = (8, 20) if name == "서울_성북" else (5, 10)
+
         response = session.get(
             config["list_url"],
             params=config.get("params", {}),
-            timeout=(5, 10),
+            timeout=timeout_value,
             allow_redirects=True
         )
         response.raise_for_status()
@@ -822,12 +832,45 @@ def check_manual_eminwon(name: str, url: str):
         keyword = config.get("title_hint", "교섭")
 
         rows = extract_rows_from_soup(soup)
+        debug_manual_fetch(name, response.url, len(rows), len(html))
         matched_items = []
 
         for row_type, row_obj, row_text in rows:
-            if keyword not in row_text:
+            row_full_text = clean_title(row_obj.get_text(" ", strip=True))
+
+            anchor_title, anchor_link = find_best_anchor_in_container(
+                row_obj,
+                response.url,
+                keyword=keyword
+            )
+
+            combined_text = f"{row_text} {row_full_text} {anchor_title}".strip()
+
+            if keyword not in combined_text:
                 continue
 
+            detected_date = extract_date_from_text(combined_text)
+
+            detected_title = anchor_title if is_meaningful_title(anchor_title, keyword) else row_text
+            detected_title = clean_title(detected_title)
+
+            if not detected_date:
+                detected_date = extract_date_from_text(row_full_text)
+
+            if not anchor_link:
+                anchor_link = extract_best_post_link(
+                    html,
+                    response.url,
+                    keyword=keyword,
+                    preferred_title=detected_title
+                )
+
+            matched_items.append({
+                "title": detected_title,
+                "date": detected_date,
+                "link": anchor_link,
+                "row_text": row_text
+            })
             detected_date = extract_date_from_text(row_text)
 
             anchor_title, anchor_link = find_best_anchor_in_container(
@@ -1394,3 +1437,4 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
