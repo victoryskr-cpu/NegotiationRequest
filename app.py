@@ -838,10 +838,19 @@ def check_namyangju(name: str, url: str):
         return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
 
 def check_seongbuk(name: str, url: str):
+
     session = create_session()
 
     try:
-        search_url = "https://www.sb.go.kr/www/selectEminwonList.do"
+        base = "https://www.sb.go.kr"
+
+        # 1단계: 메인 페이지 먼저 방문 (세션 생성)
+        session.get(
+            base + "/www/selectEminwonList.do?key=6977",
+            timeout=(3, 5)
+        )
+
+        # 2단계: 검색 요청
         params = {
             "key": "6977",
             "searchCnd": "all",
@@ -853,32 +862,24 @@ def check_seongbuk(name: str, url: str):
             "searchKrwd": "교섭"
         }
 
-        headers = {
-            "Referer": "https://www.sb.go.kr/www/selectEminwonList.do?key=6977",
-            "User-Agent": "Mozilla/5.0"
-        }
-
         response = session.get(
-            search_url,
+            base + "/www/selectEminwonList.do",
             params=params,
-            headers=headers,
-            timeout=(2, 5),   # 아주 짧게
-            allow_redirects=True
+            timeout=(3, 5)
         )
 
         response.raise_for_status()
-        response.encoding = response.apparent_encoding or response.encoding
+        response.encoding = response.apparent_encoding
 
-        return analyze_response_text(name, response.url, response.text)
+        html = response.text
+
+        return analyze_response_text(name, response.url, html)
 
     except requests.exceptions.Timeout:
         return make_result(name, url, "⚠️ 타임아웃")
-    except requests.exceptions.HTTPError:
-        return make_result(name, url, "⚠️ 접속 오류")
-    except requests.exceptions.RequestException:
-        return make_result(name, url, "⚠️ 요청 실패")
+
     except Exception as e:
-        return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
+        return make_result(name, url, "⚠️ 오류", "", str(e)[:120], "")
 
 def check_chungju(name: str, url: str):
     session = create_session()
@@ -1500,6 +1501,7 @@ for region, sites in manual_grouped.items():
             region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
             region_df["링크"] = region_df["링크"].apply(lambda x: make_clickable_link(x, "이동하여 검색"))
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
