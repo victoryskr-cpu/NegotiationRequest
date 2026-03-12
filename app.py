@@ -8,7 +8,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urljoin
 import re
 from io import BytesIO
-import time
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -110,6 +109,11 @@ td {
 .result-table th:nth-child(2), .result-table td:nth-child(2) { width: 160px; }
 .result-table th:nth-child(3), .result-table td:nth-child(3) { width: 150px; }
 .result-table th:nth-child(4), .result-table td:nth-child(4) { width: auto; }
+.small-note {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
 </style>
 
 <div class="header-container">
@@ -202,7 +206,7 @@ manual_data = [
     ["서울_강북구", "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&bbsId=&cl1Cd=&optn5=&pageIndex=1&searchCnd2=&searchCnd=&searchWrd=%EA%B5%90%EC%84%AD"],
     ["서울_관악구", "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/List.do?typeCode=1&searchCondition=TITLE&searchKeyword=%EA%B5%90%EC%84%AD"],
     ["서울_서대문구", "https://www.sdm.go.kr/news/notice/notice.do?mode=list&srchTitle=%EA%B5%90%EC%84%AD"],
-    ["서울_성북", "https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchCnd2=notAncmtSj&searchKrwd=교섭"],
+    ["서울_성북", "https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchCnd=all&depNm=&searchCnd2=notAncmtSj&pageUnit=10&bgnde=&endde=&searchKrwd=%EA%B5%90%EC%84%AD"],
     ["서울_송파구", "https://www.songpa.go.kr/www/selectGosiList.do?key=2776&not_ancmt_se_code=&searchCnd=SJ&searchKrwd=교섭"],
     ["서울_양천구", "https://www.yangcheon.go.kr/site/yangcheon/ex/bbs/List.do?cbIdx=254#"],
     ["서울_종로구", "https://www.jongno.go.kr/portal/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000271&menuNo=1756&menuId=1756"],
@@ -239,8 +243,11 @@ manual_data = [
 ]
 
 # -------------------------------------------------
-# manual 자동화 대상
+# 자동화/수동 상태 정의
 # -------------------------------------------------
+AUTO_MANUAL_SITE_NAMES = {"충북_청주"}
+MANUAL_ONLY_SITE_NAMES = set(name for name, _ in manual_data if name not in AUTO_MANUAL_SITE_NAMES)
+
 MANUAL_EMINWON_CONFIG = {
     "충북_청주": {
         "list_url": "https://www.cheongju.go.kr/www/selectEminwonNoticeList.do",
@@ -252,24 +259,8 @@ MANUAL_EMINWON_CONFIG = {
     }
 }
 
-AUTOMATED_MANUAL_SITE_NAMES = {
-    "충북_청주",
-    "충북_충주",
-    "경기_남양주",
-    "서울_성북",
-}
-
 target_data = {region: sorted(sites, key=lambda x: x[0]) for region, sites in raw_target_data.items()}
-
-manual_sites = sorted(
-    [row for row in manual_data if row[0] not in AUTOMATED_MANUAL_SITE_NAMES],
-    key=lambda x: x[0]
-)
-
-automated_manual_sites = sorted(
-    [row for row in manual_data if row[0] in AUTOMATED_MANUAL_SITE_NAMES],
-    key=lambda x: x[0]
-)
+manual_lookup = {name: url for name, url in manual_data}
 
 # -------------------------------------------------
 # 세션 상태 초기화
@@ -296,12 +287,31 @@ ERROR_STATUSES = {
     "⚠️ 수동 확인",
 }
 
+REGION_PREFIX_MAP = {
+    "서울특별시": "서울",
+    "부산광역시": "부산",
+    "대구광역시": "대구",
+    "울산광역시": "울산",
+    "강원도": "강원",
+    "경기도": "경기",
+    "전북특별자치도": "전북",
+    "경상북도": "경북",
+    "경상남도": "경남",
+    "충청남도": "충남",
+    "충청북도": "충북",
+}
+
 def create_session():
     session = requests.Session()
     session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        "Accept": "text/html,application/xhtml+xml",
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/122.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8",
+        "Connection": "keep-alive"
     })
 
     retry = Retry(
@@ -325,6 +335,16 @@ def make_result(name, search_url, status, detected_date="", detected_title="", d
         "감지일자": detected_date,
         "감지제목": detected_title,
         "감지링크": detected_link
+    }
+
+def make_manual_result(name, search_url):
+    return {
+        "지자체명": name,
+        "검색링크": search_url,
+        "상태": "⚠️ 수동 확인",
+        "감지일자": "",
+        "감지제목": "",
+        "감지링크": ""
     }
 
 def extract_text_lines(html: str):
@@ -391,7 +411,6 @@ def extract_date_from_item(item: dict):
             detected = extract_date_from_text(value)
             if detected:
                 return detected
-
     for value in item.values():
         if isinstance(value, str):
             detected = extract_date_from_text(value)
@@ -689,11 +708,6 @@ def check_gyeonggi(name: str, url: str):
         return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120])
 
 def check_manual_eminwon(name: str, url: str):
-
-    # 성북 전용 처리
-    if name == "서울_성북":
-        return check_seongbuk(name, url)
-
     config = MANUAL_EMINWON_CONFIG.get(name)
     if not config:
         return None
@@ -708,9 +722,6 @@ def check_manual_eminwon(name: str, url: str):
         )
         response.raise_for_status()
         response.encoding = response.apparent_encoding or response.encoding
-
-        print("[STATUS]", name, response.status_code)
-        print("[URL]", name, response.url)
 
         html = response.text
         soup = BeautifulSoup(html, "html.parser")
@@ -803,121 +814,30 @@ def check_manual_eminwon(name: str, url: str):
     except Exception as e:
         return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
 
-def check_ulsan_metropolitan(name: str, url: str):
-    session = create_session()
-    try:
-        post_url = "https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan?mId=001004002000000000"
-        payload = {
-            "srchGubun": "",
-            "srchType": "srchSj",
-            "srchWord": "교섭"
-        }
-        response = session.post(post_url, data=payload, timeout=15)
-        response.raise_for_status()
-        response.encoding = response.apparent_encoding or response.encoding
-        return analyze_response_text(name, url, response.text)
-    except requests.exceptions.Timeout:
-        return make_result(name, url, "⚠️ 타임아웃")
-    except requests.exceptions.HTTPError:
-        return make_result(name, url, "⚠️ 접속 오류")
-    except requests.exceptions.RequestException:
-        return make_result(name, url, "⚠️ 요청 실패")
-    except Exception:
-        return make_result(name, url, "⚠️ 파싱 오류")
-
-def check_namyangju(name: str, url: str):
-    session = create_session()
-    try:
-        search_url = "https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492&searchKrwd=교섭"
-        response = session.get(search_url, timeout=(6, 15), allow_redirects=True)
-        response.raise_for_status()
-        response.encoding = response.apparent_encoding or response.encoding
-        print("[STATUS]", name, response.status_code)
-        print("[URL]", name, response.url)
-        return analyze_response_text(name, search_url, response.text)
-    except requests.exceptions.Timeout:
-        return make_result(name, url, "⚠️ 타임아웃")
-    except requests.exceptions.HTTPError:
-        return make_result(name, url, "⚠️ 접속 오류")
-    except requests.exceptions.RequestException:
-        return make_result(name, url, "⚠️ 요청 실패")
-    except Exception as e:
-        return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
-
-def check_seongbuk(name: str, url: str):
-    session = create_session()
-
-    try:
-        search_url = "https://www.sb.go.kr/www/selectEminwonList.do"
-        params = {
-            "pageUnit": "10",
-            "pageIndex": "1",
-            "searchCnd": "all",
-            "searchKrwd": "교섭",
-            "searchCnd2": "notAncmtSj",
-            "depNm": "",
-            "key": "6977",
-        }
-
-        headers = {
-            "Referer": "https://www.sb.go.kr/www/selectEminwonList.do?key=6977",
-            "User-Agent": "Mozilla/5.0"
-        }
-
-        response = session.get(
-            search_url,
-            params=params,
-            headers=headers,
-            timeout=(3, 6),
-            allow_redirects=True
-        )
-        response.raise_for_status()
-        response.encoding = response.apparent_encoding or response.encoding
-
-        html = response.text
-
-        print("===== 성북 디버그 =====")
-        print("URL:", response.url)
-        print("HTML 길이:", len(html))
-
-        # 소스에 실제 결과가 있는지 한번 더 확인
-        if "selectEminwonView.do" in html and "교섭" in html:
-            return analyze_response_text(name, response.url, html)
-
-        return make_result(name, url, "⚠️ 수동 확인", "", "", "")
-
-    except requests.exceptions.Timeout:
-        return make_result(name, url, "⚠️ 수동 확인", "", "", "")
-    except requests.exceptions.HTTPError:
-        return make_result(name, url, "⚠️ 접속 오류")
-    except requests.exceptions.RequestException:
-        return make_result(name, url, "⚠️ 요청 실패")
-    except Exception as e:
-        return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
+def check_manual_or_auto_site(name: str, url: str):
+    if name in AUTO_MANUAL_SITE_NAMES:
+        return check_manual_eminwon(name, url)
+    if name in MANUAL_ONLY_SITE_NAMES:
+        return make_manual_result(name, url)
+    return None
 
 # -------------------------------------------------
 # 공통 검사 함수
 # -------------------------------------------------
 def check_site_stable(name: str, url: str):
-    if name == "경기_남양주":
-        return check_namyangju(name, url)
-    if name == "서울_성북":
-        return check_seongbuk(name, url)
-    if name == "충북_충주":
-        return check_chungju(name, url)
-    if name == "충북_청주":
-        return check_seongbuk(name, url)
+    manual_result = check_manual_or_auto_site(name, url)
+    if manual_result is not None:
+        return manual_result
+
     if name == "경상남도" or "gyeongnam.go.kr/index.gyeong" in url:
         return check_gyeongnam(name, url)
+
     if name == "경기도" or ("gg.go.kr/bbs/board.do" in url and "bsIdx=469" in url):
         return check_gyeonggi(name, url)
-    if name == "울산광역시" or "ulsan.go.kr/u/rep/transfer/notice/list.ulsan" in url:
-        return check_ulsan_metropolitan(name, url)
 
     session = create_session()
     for attempt in range(2):
         try:
-            time.sleep(0.15 * attempt)
             response = session.get(url, timeout=(5, 8), allow_redirects=True)
             response.raise_for_status()
             response.encoding = response.apparent_encoding or response.encoding
@@ -964,8 +884,14 @@ def make_clickable_link(url: str, text: str):
 
 def get_display_link_text(row):
     name = (row.get("지자체명") or "").strip()
+    status = (row.get("상태") or "").strip()
     detected_link = (row.get("감지링크") or "").strip()
     search_url = (row.get("검색링크") or "").strip()
+
+    if status == "⚠️ 수동 확인":
+        if search_url:
+            return make_clickable_link(search_url, "검색하러 가기")
+        return ""
 
     force_search_only = {
         "강원특별자치도",
@@ -974,14 +900,20 @@ def get_display_link_text(row):
     }
 
     if name in force_search_only:
-        return make_clickable_link(search_url, "검색결과 보기") if search_url else ""
+        if search_url:
+            return make_clickable_link(search_url, "검색결과 보기")
+        return ""
 
     if not detected_link or detected_link == search_url:
-        return make_clickable_link(search_url, "검색결과 보기") if search_url else ""
+        if search_url:
+            return make_clickable_link(search_url, "검색결과 보기")
+        return ""
 
     bad_prefixes = ("javascript:", "intent:", "kakaolink:", "mailto:")
     if detected_link.lower().startswith(bad_prefixes):
-        return make_clickable_link(search_url, "검색결과 보기") if search_url else ""
+        if search_url:
+            return make_clickable_link(search_url, "검색결과 보기")
+        return ""
 
     return make_clickable_link(detected_link, "게시물로 이동")
 
@@ -989,6 +921,7 @@ def make_display_dataframe(results):
     df = pd.DataFrame(results)
     if df.empty:
         return pd.DataFrame(columns=["지자체명", "상태", "감지일자", "감지내용 확인"])
+
     return pd.DataFrame({
         "지자체명": df["지자체명"],
         "상태": df["상태"],
@@ -1010,27 +943,13 @@ def make_grouped_display_html(results):
 
     ordered_groups = []
     for region in sort_order:
-        prefix_map = {
-            "서울특별시": "서울",
-            "부산광역시": "부산",
-            "대구광역시": "대구",
-            "울산광역시": "울산",
-            "강원도": "강원",
-            "경기도": "경기",
-            "전북특별자치도": "전북",
-            "경상북도": "경북",
-            "경상남도": "경남",
-            "충청남도": "충남",
-            "충청북도": "충북",
-        }
-        ordered_groups.append((region, prefix_map.get(region, region)))
+        ordered_groups.append((region, REGION_PREFIX_MAP.get(region, region)))
 
     html_parts = []
 
     for region_label, group_key in ordered_groups:
         group_df = df[df["지역그룹"] == group_key].copy()
 
-        # 광역본청 이름이 지역그룹과 다를 수 있으므로 같이 보정
         if group_df.empty:
             group_df = df[df["지자체명"] == region_label].copy()
 
@@ -1049,7 +968,6 @@ def make_grouped_display_html(results):
         html_parts.append(f"<h4 style='margin-top:18px; margin-bottom:8px;'>{region_label}</h4>")
         html_parts.append(display_df.to_html(escape=False, index=False, classes="result-table"))
 
-    # 혹시 위 순서에 안 잡히는 그룹이 있으면 마지막에 추가
     handled_group_keys = {group_key for _, group_key in ordered_groups}
     extra_groups = [g for g in df["지역그룹"].dropna().unique().tolist() if g not in handled_group_keys]
 
@@ -1074,18 +992,19 @@ def make_grouped_display_html(results):
 
 def to_excel(results):
     df = pd.DataFrame(results)
-
     if df.empty:
         export_df = pd.DataFrame(columns=["지자체명", "상태", "감지일자", "감지내용 확인"])
     else:
+        def export_link_text(row):
+            if row.get("상태") == "⚠️ 수동 확인":
+                return row.get("검색링크", "")
+            return row["감지링크"] if row.get("감지링크") else row.get("검색링크", "")
+
         export_df = pd.DataFrame({
             "지자체명": df["지자체명"],
             "상태": df["상태"],
             "감지일자": df["감지일자"],
-            "감지내용 확인": df.apply(
-                lambda row: row["감지링크"] if row.get("감지링크") else row.get("검색링크", ""),
-                axis=1
-            )
+            "감지내용 확인": df.apply(export_link_text, axis=1)
         })
 
     output = BytesIO()
@@ -1122,41 +1041,122 @@ def to_excel(results):
 
     return output.getvalue()
 
-def group_manual_sites(manual_sites_list):
-    grouped = {}
-    for name, url in manual_sites_list:
-        region_key = name.split("_")[0] if "_" in name else name
-        if region_key not in grouped:
-            grouped[region_key] = []
-        grouped[region_key].append([name, url])
-    return grouped
-
-def get_auto_manual_sites_by_selected_regions(selected_regions):
-    matched = []
-    region_prefix_map = {
-        "서울특별시": "서울",
-        "부산광역시": "부산",
-        "대구광역시": "대구",
-        "울산광역시": "울산",
-        "강원도": "강원",
-        "경기도": "경기",
-        "전북특별자치도": "전북",
-        "경상북도": "경북",
-        "경상남도": "경남",
-        "충청남도": "충남",
-        "충청북도": "충북",
-    }
-    selected_prefixes = {region_prefix_map.get(r, r) for r in selected_regions}
-    for name, url in automated_manual_sites:
-        prefix = name.split("_")[0] if "_" in name else name
-        if prefix in selected_prefixes:
-            matched.append((name, url))
-    return matched
-
 def sort_results_by_target_order(results, target_sites):
     order_map = {name: i for i, (name, _) in enumerate(target_sites)}
     return sorted(results, key=lambda x: order_map.get(x["지자체명"], 999999))
 
+# -------------------------------------------------
+# 선택 UI 유틸
+# -------------------------------------------------
+def get_sites_for_region(region_name):
+    base_sites = list(target_data.get(region_name, []))
+    prefix = REGION_PREFIX_MAP.get(region_name, region_name)
+
+    manual_sites = []
+    for name, url in manual_data:
+        if name.startswith(prefix + "_") or name == region_name:
+            manual_sites.append((name, url))
+
+    dedup_map = {}
+    for name, url in base_sites:
+        dedup_map[name] = url
+    for name, url in manual_sites:
+        if name not in dedup_map:
+            dedup_map[name] = url
+
+    merged_sites = list(dedup_map.items())
+
+    regional_head = []
+    locals_list = []
+
+    for name, url in merged_sites:
+        if "_" not in name:
+            regional_head.append((name, url))
+        else:
+            locals_list.append((name, url))
+
+    regional_head = sorted(regional_head, key=lambda x: x[0])
+    locals_list = sorted(locals_list, key=lambda x: x[0])
+
+    return regional_head + locals_list
+
+def is_auto_site(site_name):
+    return site_name in target_data_flat_names or site_name in AUTO_MANUAL_SITE_NAMES
+
+def is_manual_only_site(site_name):
+    return site_name in MANUAL_ONLY_SITE_NAMES
+
+def format_site_label(site_name):
+    if site_name in MANUAL_ONLY_SITE_NAMES:
+        return f"{site_name} (수동검색)"
+    if site_name in AUTO_MANUAL_SITE_NAMES:
+        return f"{site_name} (manual 자동화)"
+    return site_name
+
+def on_all_sites_clicked():
+    checked = st.session_state.get("all_sites", False)
+    for region in sort_order:
+        auto_sites = [name for name, _ in get_sites_for_region(region) if is_auto_site(name)]
+        manual_sites = [name for name, _ in get_sites_for_region(region) if is_manual_only_site(name)]
+
+        st.session_state[f"region_all_{region}"] = checked
+
+        for site_name in auto_sites:
+            st.session_state[f"site_{site_name}"] = checked
+
+        # 전체 선택은 수동검색까지 기본적으로 같이 선택하지 않음
+        if checked:
+            for site_name in manual_sites:
+                st.session_state[f"site_{site_name}"] = False
+        else:
+            for site_name in manual_sites:
+                st.session_state[f"site_{site_name}"] = False
+
+def on_region_group_all_clicked(region_name):
+    checked = st.session_state.get(f"region_all_{region_name}", False)
+    for site_name, _ in get_sites_for_region(region_name):
+        if is_auto_site(site_name):
+            st.session_state[f"site_{site_name}"] = checked
+
+def sync_region_all_state(region_name):
+    sites = get_sites_for_region(region_name)
+    auto_site_names = [site_name for site_name, _ in sites if is_auto_site(site_name)]
+
+    if not auto_site_names:
+        st.session_state[f"region_all_{region_name}"] = False
+        return
+
+    all_checked = all(
+        st.session_state.get(f"site_{site_name}", False)
+        for site_name in auto_site_names
+    )
+    st.session_state[f"region_all_{region_name}"] = all_checked
+
+def sync_global_all_state():
+    all_auto_sites = []
+    for region in sort_order:
+        all_auto_sites.extend([site_name for site_name, _ in get_sites_for_region(region) if is_auto_site(site_name)])
+
+    if not all_auto_sites:
+        st.session_state["all_sites"] = False
+        return
+
+    st.session_state["all_sites"] = all(
+        st.session_state.get(f"site_{site_name}", False)
+        for site_name in all_auto_sites
+    )
+
+# -------------------------------------------------
+# 대상 이름 집합
+# -------------------------------------------------
+target_data_flat_names = set()
+for region_sites in target_data.values():
+    for name, _ in region_sites:
+        target_data_flat_names.add(name)
+
+# -------------------------------------------------
+# 검색 실행
+# -------------------------------------------------
 def run_checks(target_sites):
     results = []
     total_count = len(target_sites)
@@ -1176,7 +1176,6 @@ def run_checks(target_sites):
 
         for future in as_completed(future_map):
             name, url = future_map[future]
-
             current_placeholder.info(f"🔎 검색 중: {name}")
 
             try:
@@ -1188,7 +1187,6 @@ def run_checks(target_sites):
             completed_count += 1
 
             percent = int((completed_count / total_count) * 100) if total_count else 100
-
             status_placeholder.markdown(
                 f"<span class='status-text'>⏳ [{percent}%] 총 {total_count}개 중 {completed_count}개 완료</span>",
                 unsafe_allow_html=True
@@ -1204,125 +1202,39 @@ def run_checks(target_sites):
     st.session_state["last_results"] = results
     st.session_state["last_run_time"] = datetime.now(ZoneInfo("Asia/Seoul"))
     return results
-    
+
 # -------------------------------------------------
 # 메인 화면 지역 선택
 # -------------------------------------------------
-def toggle_region_selector():
-    st.session_state["region_selector_open"] = not st.session_state["region_selector_open"]
-
-def get_sites_for_region(region_name):
-    auto_sites = get_auto_manual_sites_by_selected_regions([region_name])
-    base_sites = list(target_data.get(region_name, []))
-
-    dedup_map = {}
-    for name, url in base_sites + auto_sites:
-        dedup_map[name] = url
-
-    merged_sites = list(dedup_map.items())
-
-    region_prefix_map = {
-        "서울특별시": "서울",
-        "부산광역시": "부산",
-        "대구광역시": "대구",
-        "울산광역시": "울산",
-        "강원도": "강원",
-        "경기도": "경기",
-        "전북특별자치도": "전북",
-        "경상북도": "경북",
-        "경상남도": "경남",
-        "충청남도": "충남",
-        "충청북도": "충북",
-    }
-
-    region_prefix = region_prefix_map.get(region_name, region_name)
-
-    regional_head = []
-    locals_list = []
-
-    for name, url in merged_sites:
-        if "_" not in name:
-            regional_head.append((name, url))
-        elif name.startswith(region_prefix + "_"):
-            locals_list.append((name, url))
-        else:
-            locals_list.append((name, url))
-
-    regional_head = sorted(regional_head, key=lambda x: x[0])
-    locals_list = sorted(locals_list, key=lambda x: x[0])
-
-    return regional_head + locals_list
-
-def format_site_label(site_name):
-    if site_name in AUTOMATED_MANUAL_SITE_NAMES:
-        return f"{site_name} (manual 자동화)"
-    return site_name
-
-def on_all_sites_clicked():
-    checked = st.session_state.get("all_sites", False)
-
-    for region in sort_order:
-        st.session_state[f"region_all_{region}"] = checked
-        for site_name, _ in get_sites_for_region(region):
-            st.session_state[f"site_{site_name}"] = checked
-
-def on_region_group_all_clicked(region_name):
-    checked = st.session_state.get(f"region_all_{region_name}", False)
-    for site_name, _ in get_sites_for_region(region_name):
-        st.session_state[f"site_{site_name}"] = checked
-
-def sync_region_all_state(region_name):
-    sites = get_sites_for_region(region_name)
-    if not sites:
-        st.session_state[f"region_all_{region_name}"] = False
-        return
-
-    all_checked = all(
-        st.session_state.get(f"site_{site_name}", False)
-        for site_name, _ in sites
-    )
-    st.session_state[f"region_all_{region_name}"] = all_checked
-
-def sync_global_all_state():
-    all_sites = []
-    for region in sort_order:
-        all_sites.extend(get_sites_for_region(region))
-
-    if not all_sites:
-        st.session_state["all_sites"] = False
-        return
-
-    st.session_state["all_sites"] = all(
-        st.session_state.get(f"site_{site_name}", False)
-        for site_name, _ in all_sites
-    )
-
-total_target_count = 0
-for region in sort_order:
-    total_target_count += len(get_sites_for_region(region))
-
 if "all_sites" not in st.session_state:
     st.session_state["all_sites"] = False
 
 for region in sort_order:
     if f"region_all_{region}" not in st.session_state:
-        st.session_state[f"region_all_{region}"] = False
+        st.session_state[f"region_all_{region}"] = True
 
     for site_name, _ in get_sites_for_region(region):
-        if f"site_{site_name}" not in st.session_state:
-            st.session_state[f"site_{site_name}"] = False
+        key = f"site_{site_name}"
+        if key not in st.session_state:
+            # 자동검색은 기본 체크, 수동검색은 기본 해제
+            st.session_state[key] = is_auto_site(site_name)
 
 selected_sites = []
 
 st.button(
     "검색할 지역 선택",
     use_container_width=True,
-    on_click=toggle_region_selector
+    on_click=lambda: st.session_state.update({"region_selector_open": not st.session_state["region_selector_open"]})
 )
 
 if st.session_state["region_selector_open"]:
     st.markdown('<div class="selector-box">', unsafe_allow_html=True)
     st.markdown('<div class="selector-title">검색할 지역을 선택하세요</div>', unsafe_allow_html=True)
+    st.markdown('<div class="small-note">자동검색 가능 항목은 기본 체크되어 있고, 수동검색 항목은 직접 선택해야 합니다.</div>', unsafe_allow_html=True)
+
+    total_target_count = 0
+    for region in sort_order:
+        total_target_count += len([name for name, _ in get_sites_for_region(region) if is_auto_site(name)])
 
     sync_global_all_state()
 
@@ -1342,18 +1254,13 @@ if st.session_state["region_selector_open"]:
         sync_region_all_state(region)
 
         with region_cols[idx % 2]:
-            # 광역 전체 선택: 문구 짧게
-            region_checked = st.checkbox(
-                f"{region} ({len(region_sites)})",
+            auto_count = len([name for name, _ in region_sites if is_auto_site(name)])
+            st.checkbox(
+                f"{region} ({auto_count})",
                 key=f"region_all_{region}",
                 on_change=on_region_group_all_clicked,
                 args=(region,)
             )
-
-            if region_checked:
-                for site_name, site_url in region_sites:
-                    if (site_name, site_url) not in selected_sites:
-                        selected_sites.append((site_name, site_url))
 
             with st.expander(f"{region} 세부 선택", expanded=False):
                 regional_head = []
@@ -1388,13 +1295,9 @@ if st.session_state["region_selector_open"]:
     st.markdown("</div>", unsafe_allow_html=True)
 
     if selected_sites:
-        run_clicked = st.button(
-            "선택 지역 자동 확인 시작",
-            use_container_width=True
-        )
+        run_clicked = st.button("선택 지역 자동 확인 시작", use_container_width=True)
     else:
         run_clicked = False
-
 else:
     for region in sort_order:
         for site_name, site_url in get_sites_for_region(region):
@@ -1430,11 +1333,8 @@ if st.session_state["last_results"]:
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-    st.write(
-        grouped_html,
-        unsafe_allow_html=True
-    )
-    
+    st.write(grouped_html, unsafe_allow_html=True)
+
     error_sites = [
         (row["지자체명"], row["검색링크"])
         for row in results
@@ -1457,52 +1357,3 @@ if st.session_state["last_results"]:
             )
             st.session_state["last_results"] = merged_results
             st.rerun()
-
-# -------------------------------------------------
-# 직접 확인 리스트
-# -------------------------------------------------
-st.markdown("---")
-st.markdown(f"""
-<div style="display: flex; align-items: baseline; text-align: left; margin-bottom: 10px;">
-    <span class="manual-title" style="margin-right: 8px;">직접 확인 리스트</span>
-    <span class="manual-subtitle">({len(manual_sites)}개 지역)</span>
-</div>
-""", unsafe_allow_html=True)
-
-manual_grouped = group_manual_sites(manual_sites)
-
-manual_region_order = [
-    "보건복지부", "서울", "부산", "대구", "울산",
-    "경기", "강원", "전북", "경북", "경남", "충남", "충북"
-]
-
-displayed_regions = set()
-
-for region in manual_region_order:
-    if region in manual_grouped:
-        displayed_regions.add(region)
-        sites = manual_grouped[region]
-
-        with st.expander(f"{region} ({len(sites)})", expanded=False):
-            region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
-            region_df["링크"] = region_df["링크"].apply(lambda x: make_clickable_link(x, "이동하여 검색"))
-            st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
-
-for region, sites in manual_grouped.items():
-    if region not in displayed_regions:
-        with st.expander(f"{region} ({len(sites)})", expanded=False):
-            region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
-            region_df["링크"] = region_df["링크"].apply(lambda x: make_clickable_link(x, "이동하여 검색"))
-            st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
-
-
-
-
-
-
-
-
-
-
-
-
