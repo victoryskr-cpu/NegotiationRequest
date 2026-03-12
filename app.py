@@ -1189,7 +1189,8 @@ def run_checks(target_sites):
     progress_bar = st.progress(0)
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_map[future] = (name, url)
+        future_map = {}
+
         for name, url in target_sites:
             current_placeholder.info(f"🔎 현재 요청 시작: {name}")
             future = executor.submit(check_site_stable, name, url)
@@ -1197,6 +1198,7 @@ def run_checks(target_sites):
 
         for future in as_completed(future_map):
             name, url = future_map[future]
+
             current_placeholder.info(f"🔎 검색 중: {name}")
 
             try:
@@ -1206,14 +1208,16 @@ def run_checks(target_sites):
 
             results.append(result)
             completed_count += 1
-            percent = int((completed_count / total_count) * 100)
+
+            percent = int((completed_count / total_count) * 100) if total_count else 100
 
             status_placeholder.markdown(
                 f"<span class='status-text'>⏳ [{percent}%] 총 {total_count}개 중 {completed_count}개 완료</span>",
                 unsafe_allow_html=True
             )
+
             current_placeholder.success(f"✅ 방금 완료: {name} ({result['상태']})")
-            progress_bar.progress(completed_count / total_count)
+            progress_bar.progress(completed_count / total_count if total_count else 1.0)
 
     results = sort_results_by_target_order(results, target_sites)
     status_placeholder.success(f"✅ 검사 완료! (총 {len(target_sites)}개)")
@@ -1222,7 +1226,7 @@ def run_checks(target_sites):
     st.session_state["last_results"] = results
     st.session_state["last_run_time"] = datetime.now(ZoneInfo("Asia/Seoul"))
     return results
-
+    
 # -------------------------------------------------
 # 메인 화면 지역 선택
 # -------------------------------------------------
@@ -1512,6 +1516,7 @@ for region, sites in manual_grouped.items():
             region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
             region_df["링크"] = region_df["링크"].apply(lambda x: make_clickable_link(x, "이동하여 검색"))
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
