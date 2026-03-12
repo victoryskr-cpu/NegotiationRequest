@@ -1255,12 +1255,28 @@ if st.session_state["region_selector_open"]:
 
         with region_cols[idx % 2]:
             auto_count = len([name for name, _ in region_sites if is_auto_site(name)])
-            st.checkbox(
+
+            region_checked = st.checkbox(
                 f"{region} ({auto_count})",
                 key=f"region_all_{region}",
                 on_change=on_region_group_all_clicked,
                 args=(region,)
             )
+
+            # 화면 표시 일치용:
+            # 광역 체크가 켜져 있으면 자동검색 항목은 체크, 수동검색 항목은 해제 상태로 맞춤
+            if region_checked:
+                for site_name, _ in region_sites:
+                    if is_auto_site(site_name):
+                        st.session_state[f"site_{site_name}"] = True
+                    elif is_manual_only_site(site_name):
+                        if f"site_{site_name}" not in st.session_state:
+                            st.session_state[f"site_{site_name}"] = False
+            else:
+                # 광역 체크가 꺼져 있으면 자동검색 항목만 같이 해제
+                for site_name, _ in region_sites:
+                    if is_auto_site(site_name):
+                        st.session_state[f"site_{site_name}"] = False
 
             with st.expander(f"{region} 세부 선택", expanded=False):
                 regional_head = []
@@ -1357,3 +1373,4 @@ if st.session_state["last_results"]:
             )
             st.session_state["last_results"] = merged_results
             st.rerun()
+
