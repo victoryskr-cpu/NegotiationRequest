@@ -1,0 +1,6 @@
+지자체명,광역,유형,홈페이지,고시공고게시판,검색URL,사용여부,비고
+서울_강북구,서울특별시,egov,http://www.gangbuk.go.kr/,,https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082&bbsId=&cl1Cd=&optn5=&pageIndex=1&searchCnd2=&searchCnd=&searchWrd=%EA%B5%90%EC%84%AD,Y,수동검색 자동화 후보
+서울_성북,서울특별시,saeol,http://www.sb.go.kr/,,https://www.sb.go.kr/www/selectEminwonList.do?key=6977&searchKrwd=%EA%B5%90%EC%84%AD,Y,key 포함 필요
+경기_남양주,경기도,saeol,https://www.nyj.go.kr/,,https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492,Y,
+경북_포항,경상북도,saeol,https://www.pohang.go.kr/,,https://www.pohang.go.kr/portal/saeol/gosi/list.do?mid=0202010000,Y,타임아웃 점검 필요
+대구_남구,대구광역시,custom,http://www.nam.daegu.kr/,,https://nam.daegu.kr/index.do?menu_id=00000851,N,현재 수동 유지
