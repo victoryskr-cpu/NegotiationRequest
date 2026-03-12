@@ -257,11 +257,8 @@ manual_data = [
 # -------------------------------------------------
 MANUAL_EMINWON_CONFIG = {
     "충북_충주": {
-        "list_url": "https://www.chungju.go.kr/www/selectEminwonList.do",
-        "params": {
-            "key": "510",
-            "ancmt_sj": "교섭",
-        },
+        "list_url": "https://www.chungju.go.kr/www/selectEminwonList.do?key=510&ancmt_sj=교섭",
+        "params": {},
         "title_hint": "교섭"
     },
     "충북_청주": {
@@ -273,11 +270,8 @@ MANUAL_EMINWON_CONFIG = {
         "title_hint": "교섭"
     },
     "경기_남양주": {
-        "list_url": "https://www.nyj.go.kr/www/selectEminwonWebList.do",
-        "params": {
-            "key": "2492",
-            "searchKrwd": "교섭",
-        },
+        "list_url": "https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492&searchKrwd=교섭",
+        "params": {},
         "title_hint": "교섭"
     },
     "서울_성북": {
@@ -335,10 +329,9 @@ def create_session():
     session = requests.Session()
 
     session.headers.update({
-        "User-Agent": SESSION_HEADERS["User-Agent"],
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept": "text/html,application/xhtml+xml",
         "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8",
-        "Connection": "keep-alive"
     })
 
     retry = Retry(
@@ -816,24 +809,36 @@ def check_manual_eminwon(name: str, url: str):
     session = create_session()
 
     try:
-        timeout_value = (8, 20) if name == "서울_성북" else (5, 10)
+        # 성북은 타임아웃을 조금 더 길게
+        timeout_value = (10, 25) if name == "서울_성북" else (5, 12)
 
-        # 성북은 이미 URL에 파라미터가 포함되어 있어 params를 쓰지 않음
+        # 성북은 url 그대로 호출, 나머지는 config 기준 호출
         if name == "서울_성북":
             response = session.get(
                 url,
-                timeout=(10, 25),
+                timeout=timeout_value,
                 allow_redirects=True
             )
         else:
-            response = session.get(
-                config["list_url"],
-                params=config.get("params", {}),
-                timeout=(5, 12),
-                allow_redirects=True
-            )
+            if config.get("params"):
+                response = session.get(
+                    config["list_url"],
+                    params=config.get("params", {}),
+                    timeout=timeout_value,
+                    allow_redirects=True
+                )
+            else:
+                response = session.get(
+                    config["list_url"],
+                    timeout=timeout_value,
+                    allow_redirects=True
+                )
+
         response.raise_for_status()
         response.encoding = response.apparent_encoding or response.encoding
+
+        print("[STATUS]", name, response.status_code)
+        print("[URL]", name, response.url)
 
         html = response.text
         soup = BeautifulSoup(html, "html.parser")
@@ -841,6 +846,7 @@ def check_manual_eminwon(name: str, url: str):
 
         rows = extract_rows_from_soup(soup)
         debug_manual_fetch(name, response.url, len(rows), len(html))
+
         matched_items = []
 
         for row_type, row_obj, row_text in rows:
@@ -864,35 +870,6 @@ def check_manual_eminwon(name: str, url: str):
 
             if not detected_date:
                 detected_date = extract_date_from_text(row_full_text)
-
-            if not anchor_link:
-                anchor_link = extract_best_post_link(
-                    html,
-                    response.url,
-                    keyword=keyword,
-                    preferred_title=detected_title
-                )
-
-            matched_items.append({
-                "title": detected_title,
-                "date": detected_date,
-                "link": anchor_link,
-                "row_text": row_text
-            })
-            detected_date = extract_date_from_text(row_text)
-
-            anchor_title, anchor_link = find_best_anchor_in_container(
-                row_obj,
-                response.url,
-                keyword=keyword
-            )
-
-            detected_title = anchor_title if is_meaningful_title(anchor_title, keyword) else row_text
-            detected_title = clean_title(detected_title)
-
-            if not detected_date:
-                near_text = clean_title(row_obj.get_text(" ", strip=True))
-                detected_date = extract_date_from_text(near_text)
 
             if not anchor_link:
                 anchor_link = extract_best_post_link(
@@ -965,7 +942,7 @@ def check_manual_eminwon(name: str, url: str):
         return make_result(name, url, "⚠️ 요청 실패")
     except Exception as e:
         return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
-
+        
 def check_ulsan_metropolitan(name: str, url: str):
     session = create_session()
 
@@ -1445,5 +1422,6 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
