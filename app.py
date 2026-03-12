@@ -858,42 +858,26 @@ def check_seongbuk(name: str, url: str):
             "User-Agent": "Mozilla/5.0"
         }
 
-        print("===== 성북 요청 시작 =====")
-
         response = session.get(
             search_url,
             params=params,
             headers=headers,
-            timeout=(3, 8),   # 일단 짧게 테스트
+            timeout=(2, 5),   # 아주 짧게
             allow_redirects=True
         )
 
-        print("===== 성북 응답 도착 =====")
         response.raise_for_status()
         response.encoding = response.apparent_encoding or response.encoding
 
-        html = response.text
-
-        print("===== 성북 디버그 =====")
-        print("URL:", response.url)
-        print("HTML 길이:", len(html))
-
-        return analyze_response_text(name, response.url, html)
+        return analyze_response_text(name, response.url, response.text)
 
     except requests.exceptions.Timeout:
-        print("===== 성북 타임아웃 =====")
         return make_result(name, url, "⚠️ 타임아웃")
-
     except requests.exceptions.HTTPError:
-        print("===== 성북 HTTP 에러 =====")
         return make_result(name, url, "⚠️ 접속 오류")
-
-    except requests.exceptions.RequestException as e:
-        print("===== 성북 요청 예외 =====", str(e))
+    except requests.exceptions.RequestException:
         return make_result(name, url, "⚠️ 요청 실패")
-
     except Exception as e:
-        print("===== 성북 기타 예외 =====", str(e))
         return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
 
 def check_chungju(name: str, url: str):
@@ -1516,6 +1500,7 @@ for region, sites in manual_grouped.items():
             region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
             region_df["링크"] = region_df["링크"].apply(lambda x: make_clickable_link(x, "이동하여 검색"))
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
