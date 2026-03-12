@@ -1222,65 +1222,64 @@ if st.session_state["region_selector_open"]:
 
     sync_global_all_state()
 
-    # 맨 위 전체 선택
     st.checkbox(
         f"전체 선택 ({total_target_count})",
         key="all_sites",
         on_change=on_all_sites_clicked
     )
 
-    st.markdown("")
+    region_cols = st.columns(2)
 
-    for region in sort_order:
+    for idx, region in enumerate(sort_order):
         region_sites = get_sites_for_region(region)
         if not region_sites:
             continue
 
         sync_region_all_state(region)
 
-        # 광역단위 체크박스 먼저 노출
-        region_checked = st.checkbox(
-            f"{region} 전체 ({len(region_sites)})",
-            key=f"region_all_{region}",
-            on_change=on_region_group_all_clicked,
-            args=(region,)
-        )
+        with region_cols[idx % 2]:
+            # 광역 전체 선택: 문구 짧게
+            region_checked = st.checkbox(
+                f"{region} ({len(region_sites)})",
+                key=f"region_all_{region}",
+                on_change=on_region_group_all_clicked,
+                args=(region,)
+            )
 
-        if region_checked:
-            for site_name, site_url in region_sites:
-                if (site_name, site_url) not in selected_sites:
-                    selected_sites.append((site_name, site_url))
-
-        # 세부 조정은 expander 안에서
-        with st.expander(f"{region} 세부 선택", expanded=False):
-            regional_head = []
-            local_sites = []
-
-            for site_name, site_url in region_sites:
-                if "_" not in site_name:
-                    regional_head.append((site_name, site_url))
-                else:
-                    local_sites.append((site_name, site_url))
-
-            if regional_head:
-                st.markdown("**광역본청**")
-                for site_name, site_url in regional_head:
-                    checked = st.checkbox(
-                        format_site_label(site_name),
-                        key=f"site_{site_name}"
-                    )
-                    if checked and (site_name, site_url) not in selected_sites:
+            if region_checked:
+                for site_name, site_url in region_sites:
+                    if (site_name, site_url) not in selected_sites:
                         selected_sites.append((site_name, site_url))
 
-            if local_sites:
-                st.markdown("**기초단체 / 개별기관**")
-                for site_name, site_url in local_sites:
-                    checked = st.checkbox(
-                        format_site_label(site_name),
-                        key=f"site_{site_name}"
-                    )
-                    if checked and (site_name, site_url) not in selected_sites:
-                        selected_sites.append((site_name, site_url))
+            with st.expander(f"{region} 세부 선택", expanded=False):
+                regional_head = []
+                local_sites = []
+
+                for site_name, site_url in region_sites:
+                    if "_" not in site_name:
+                        regional_head.append((site_name, site_url))
+                    else:
+                        local_sites.append((site_name, site_url))
+
+                if regional_head:
+                    st.markdown("**광역본청**")
+                    for site_name, site_url in regional_head:
+                        checked = st.checkbox(
+                            format_site_label(site_name),
+                            key=f"site_{site_name}"
+                        )
+                        if checked and (site_name, site_url) not in selected_sites:
+                            selected_sites.append((site_name, site_url))
+
+                if local_sites:
+                    st.markdown("**기초단체 / 개별기관**")
+                    for site_name, site_url in local_sites:
+                        checked = st.checkbox(
+                            format_site_label(site_name),
+                            key=f"site_{site_name}"
+                        )
+                        if checked and (site_name, site_url) not in selected_sites:
+                            selected_sites.append((site_name, site_url))
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1391,5 +1390,6 @@ for region, sites in manual_grouped.items():
             region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
             region_df["링크"] = region_df["링크"].apply(lambda x: make_clickable_link(x, "이동하여 검색"))
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
