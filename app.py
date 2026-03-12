@@ -270,7 +270,7 @@ AUTOMATED_MANUAL_SITE_NAMES = set(MANUAL_EMINWON_CONFIG.keys())
     "충북_청주",
     "충북_충주",
     "경기_남양주",
-    "서울_성북",
+    "서울_성북"
 )
 
 automated_manual_sites = sorted(
@@ -1498,6 +1498,7 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
