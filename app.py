@@ -818,12 +818,20 @@ def check_manual_eminwon(name: str, url: str):
     try:
         timeout_value = (8, 20) if name == "서울_성북" else (5, 10)
 
-        response = session.get(
-            config["list_url"],
-            params=config.get("params", {}),
-            timeout=timeout_value,
-            allow_redirects=True
-        )
+        # 성북은 이미 URL에 파라미터가 포함되어 있어 params를 쓰지 않음
+        if name == "서울_성북":
+            response = session.get(
+                url,
+                timeout=(10, 25),
+                allow_redirects=True
+            )
+        else:
+            response = session.get(
+                config["list_url"],
+                params=config.get("params", {}),
+                timeout=(5, 12),
+                allow_redirects=True
+            )
         response.raise_for_status()
         response.encoding = response.apparent_encoding or response.encoding
 
@@ -1437,4 +1445,5 @@ for region, sites in manual_grouped.items():
                 lambda x: make_clickable_link(x, "이동하여 검색")
             )
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
