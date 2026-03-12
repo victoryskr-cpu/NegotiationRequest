@@ -1154,6 +1154,14 @@ def format_site_label(site_name):
         return f"{site_name} (manual 자동화)"
     return site_name
 
+def on_all_sites_clicked():
+    checked = st.session_state.get("all_sites", False)
+
+    for region in sort_order:
+        st.session_state[f"region_all_{region}"] = checked
+        for site_name, _ in get_sites_for_region(region):
+            st.session_state[f"site_{site_name}"] = checked
+
 def on_region_group_all_clicked(region_name):
     checked = st.session_state.get(f"region_all_{region_name}", False)
     for site_name, _ in get_sites_for_region(region_name):
@@ -1171,9 +1179,26 @@ def sync_region_all_state(region_name):
     )
     st.session_state[f"region_all_{region_name}"] = all_checked
 
+def sync_global_all_state():
+    all_sites = []
+    for region in sort_order:
+        all_sites.extend(get_sites_for_region(region))
+
+    if not all_sites:
+        st.session_state["all_sites"] = False
+        return
+
+    st.session_state["all_sites"] = all(
+        st.session_state.get(f"site_{site_name}", False)
+        for site_name, _ in all_sites
+    )
+
 total_target_count = 0
 for region in sort_order:
     total_target_count += len(get_sites_for_region(region))
+
+if "all_sites" not in st.session_state:
+    st.session_state["all_sites"] = False
 
 for region in sort_order:
     if f"region_all_{region}" not in st.session_state:
@@ -1195,6 +1220,17 @@ if st.session_state["region_selector_open"]:
     st.markdown('<div class="selector-box">', unsafe_allow_html=True)
     st.markdown('<div class="selector-title">검색할 지역을 선택하세요</div>', unsafe_allow_html=True)
 
+    sync_global_all_state()
+
+    # 맨 위 전체 선택
+    st.checkbox(
+        f"전체 선택 ({total_target_count})",
+        key="all_sites",
+        on_change=on_all_sites_clicked
+    )
+
+    st.markdown("")
+
     for region in sort_order:
         region_sites = get_sites_for_region(region)
         if not region_sites:
@@ -1202,14 +1238,21 @@ if st.session_state["region_selector_open"]:
 
         sync_region_all_state(region)
 
-        with st.expander(f"{region} ({len(region_sites)})", expanded=False):
-            st.checkbox(
-                f"{region} 전체 선택",
-                key=f"region_all_{region}",
-                on_change=on_region_group_all_clicked,
-                args=(region,)
-            )
+        # 광역단위 체크박스 먼저 노출
+        region_checked = st.checkbox(
+            f"{region} 전체 ({len(region_sites)})",
+            key=f"region_all_{region}",
+            on_change=on_region_group_all_clicked,
+            args=(region,)
+        )
 
+        if region_checked:
+            for site_name, site_url in region_sites:
+                if (site_name, site_url) not in selected_sites:
+                    selected_sites.append((site_name, site_url))
+
+        # 세부 조정은 expander 안에서
+        with st.expander(f"{region} 세부 선택", expanded=False):
             regional_head = []
             local_sites = []
 
@@ -1226,7 +1269,7 @@ if st.session_state["region_selector_open"]:
                         format_site_label(site_name),
                         key=f"site_{site_name}"
                     )
-                    if checked:
+                    if checked and (site_name, site_url) not in selected_sites:
                         selected_sites.append((site_name, site_url))
 
             if local_sites:
@@ -1236,7 +1279,7 @@ if st.session_state["region_selector_open"]:
                         format_site_label(site_name),
                         key=f"site_{site_name}"
                     )
-                    if checked:
+                    if checked and (site_name, site_url) not in selected_sites:
                         selected_sites.append((site_name, site_url))
 
     st.markdown("</div>", unsafe_allow_html=True)
@@ -1248,6 +1291,7 @@ if st.session_state["region_selector_open"]:
         )
     else:
         run_clicked = False
+
 else:
     for region in sort_order:
         for site_name, site_url in get_sites_for_region(region):
@@ -1259,6 +1303,7 @@ dedup_map = {}
 for name, url in selected_sites:
     dedup_map[name] = url
 target_sites = list(dedup_map.items())
+
 # -------------------------------------------------
 # 검색 실행
 # -------------------------------------------------
@@ -1346,4 +1391,5 @@ for region, sites in manual_grouped.items():
             region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
             region_df["링크"] = region_df["링크"].apply(lambda x: make_clickable_link(x, "이동하여 검색"))
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
