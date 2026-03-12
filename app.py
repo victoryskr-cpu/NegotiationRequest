@@ -972,6 +972,82 @@ def make_display_dataframe(results):
         "감지내용 확인": df.apply(get_display_link_text, axis=1)
     })
 
+def get_region_group_name(name: str):
+    if "_" in name:
+        return name.split("_")[0]
+    return name
+
+def make_grouped_display_html(results):
+    if not results:
+        return "<p>결과가 없습니다.</p>"
+
+    df = pd.DataFrame(results).copy()
+    df["지역그룹"] = df["지자체명"].apply(get_region_group_name)
+
+    ordered_groups = []
+    for region in sort_order:
+        prefix_map = {
+            "서울특별시": "서울",
+            "부산광역시": "부산",
+            "대구광역시": "대구",
+            "울산광역시": "울산",
+            "강원도": "강원",
+            "경기도": "경기",
+            "전북특별자치도": "전북",
+            "경상북도": "경북",
+            "경상남도": "경남",
+            "충청남도": "충남",
+            "충청북도": "충북",
+        }
+        ordered_groups.append((region, prefix_map.get(region, region)))
+
+    html_parts = []
+
+    for region_label, group_key in ordered_groups:
+        group_df = df[df["지역그룹"] == group_key].copy()
+
+        # 광역본청 이름이 지역그룹과 다를 수 있으므로 같이 보정
+        if group_df.empty:
+            group_df = df[df["지자체명"] == region_label].copy()
+
+        if group_df.empty:
+            continue
+
+        group_df = group_df.sort_values(by="지자체명")
+
+        display_df = pd.DataFrame({
+            "지자체명": group_df["지자체명"],
+            "상태": group_df["상태"],
+            "감지일자": group_df["감지일자"],
+            "감지내용 확인": group_df.apply(get_display_link_text, axis=1)
+        })
+
+        html_parts.append(f"<h4 style='margin-top:18px; margin-bottom:8px;'>{region_label}</h4>")
+        html_parts.append(display_df.to_html(escape=False, index=False, classes="result-table"))
+
+    # 혹시 위 순서에 안 잡히는 그룹이 있으면 마지막에 추가
+    handled_group_keys = {group_key for _, group_key in ordered_groups}
+    extra_groups = [g for g in df["지역그룹"].dropna().unique().tolist() if g not in handled_group_keys]
+
+    for extra_group in sorted(extra_groups):
+        group_df = df[df["지역그룹"] == extra_group].copy()
+        if group_df.empty:
+            continue
+
+        group_df = group_df.sort_values(by="지자체명")
+
+        display_df = pd.DataFrame({
+            "지자체명": group_df["지자체명"],
+            "상태": group_df["상태"],
+            "감지일자": group_df["감지일자"],
+            "감지내용 확인": group_df.apply(get_display_link_text, axis=1)
+        })
+
+        html_parts.append(f"<h4 style='margin-top:18px; margin-bottom:8px;'>{extra_group}</h4>")
+        html_parts.append(display_df.to_html(escape=False, index=False, classes="result-table"))
+
+    return "\n".join(html_parts)
+
 def to_excel(results):
     df = pd.DataFrame(results)
 
@@ -1390,6 +1466,7 @@ for region, sites in manual_grouped.items():
             region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
             region_df["링크"] = region_df["링크"].apply(lambda x: make_clickable_link(x, "이동하여 검색"))
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
