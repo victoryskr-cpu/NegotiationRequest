@@ -682,6 +682,11 @@ def check_gyeonggi(name: str, url: str):
         return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120])
 
 def check_manual_eminwon(name: str, url: str):
+
+    # 성북 전용 처리
+    if name == "서울_성북":
+        return check_seongbuk(name, url)
+
     config = MANUAL_EMINWON_CONFIG.get(name)
     if not config:
         return None
@@ -834,19 +839,45 @@ def check_namyangju(name: str, url: str):
 
 def check_seongbuk(name: str, url: str):
     session = create_session()
+
     try:
-        response = session.get(url, timeout=(12, 30), allow_redirects=True)
+        search_url = "https://www.sb.go.kr/www/selectEminwonList.do"
+
+        params = {
+            "key": "6977",
+            "searchCnd": "all",
+            "depNm": "",
+            "searchCnd2": "notAncmtSj",
+            "pageUnit": "10",
+            "bgnde": "",
+            "endde": "",
+            "searchKrwd": "교섭"
+        }
+
+        headers = {
+            "Referer": "https://www.sb.go.kr/www/selectEminwonList.do?key=6977",
+            "User-Agent": "Mozilla/5.0"
+        }
+
+        response = session.get(
+            search_url,
+            params=params,
+            headers=headers,
+            timeout=(10, 25),
+            allow_redirects=True
+        )
+
         response.raise_for_status()
         response.encoding = response.apparent_encoding or response.encoding
-        print("[STATUS]", name, response.status_code)
-        print("[URL]", name, response.url)
-        return analyze_response_text(name, url, response.text)
-    except requests.exceptions.Timeout:
-        return make_result(name, url, "⚠️ 타임아웃")
-    except requests.exceptions.HTTPError:
-        return make_result(name, url, "⚠️ 접속 오류")
-    except requests.exceptions.RequestException:
-        return make_result(name, url, "⚠️ 요청 실패")
+
+        html = response.text
+
+        print("===== 성북 디버그 =====")
+        print("URL:", response.url)
+        print("HTML 길이:", len(html))
+
+        return analyze_response_text(name, response.url, html)
+
     except Exception as e:
         return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
 
@@ -1466,6 +1497,7 @@ for region, sites in manual_grouped.items():
             region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
             region_df["링크"] = region_df["링크"].apply(lambda x: make_clickable_link(x, "이동하여 검색"))
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
