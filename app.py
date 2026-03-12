@@ -842,7 +842,6 @@ def check_seongbuk(name: str, url: str):
 
     try:
         search_url = "https://www.sb.go.kr/www/selectEminwonList.do"
-
         params = {
             "key": "6977",
             "searchCnd": "all",
@@ -859,14 +858,17 @@ def check_seongbuk(name: str, url: str):
             "User-Agent": "Mozilla/5.0"
         }
 
+        print("===== 성북 요청 시작 =====")
+
         response = session.get(
             search_url,
             params=params,
             headers=headers,
-            timeout=(10, 25),
+            timeout=(3, 8),   # 일단 짧게 테스트
             allow_redirects=True
         )
 
+        print("===== 성북 응답 도착 =====")
         response.raise_for_status()
         response.encoding = response.apparent_encoding or response.encoding
 
@@ -878,7 +880,20 @@ def check_seongbuk(name: str, url: str):
 
         return analyze_response_text(name, response.url, html)
 
+    except requests.exceptions.Timeout:
+        print("===== 성북 타임아웃 =====")
+        return make_result(name, url, "⚠️ 타임아웃")
+
+    except requests.exceptions.HTTPError:
+        print("===== 성북 HTTP 에러 =====")
+        return make_result(name, url, "⚠️ 접속 오류")
+
+    except requests.exceptions.RequestException as e:
+        print("===== 성북 요청 예외 =====", str(e))
+        return make_result(name, url, "⚠️ 요청 실패")
+
     except Exception as e:
+        print("===== 성북 기타 예외 =====", str(e))
         return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
 
 def check_chungju(name: str, url: str):
@@ -913,7 +928,7 @@ def check_site_stable(name: str, url: str):
     if name == "충북_충주":
         return check_chungju(name, url)
     if name == "충북_청주":
-        return check_manual_eminwon(name, url)
+        return check_seongbuk(name, url)
     if name == "경상남도" or "gyeongnam.go.kr/index.gyeong" in url:
         return check_gyeongnam(name, url)
     if name == "경기도" or ("gg.go.kr/bbs/board.do" in url and "bsIdx=469" in url):
@@ -1174,9 +1189,9 @@ def run_checks(target_sites):
     progress_bar = st.progress(0)
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_map = {}
+        future_map[future] = (name, url)
         for name, url in target_sites:
-            current_placeholder.info(f"🔎 검색 요청 등록: {name}")
+            current_placeholder.info(f"🔎 현재 요청 시작: {name}")
             future = executor.submit(check_site_stable, name, url)
             future_map[future] = (name, url)
 
@@ -1497,6 +1512,7 @@ for region, sites in manual_grouped.items():
             region_df = pd.DataFrame(sites, columns=["지자체명", "링크"])
             region_df["링크"] = region_df["링크"].apply(lambda x: make_clickable_link(x, "이동하여 검색"))
             st.write(region_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
 
 
 
