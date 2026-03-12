@@ -246,7 +246,13 @@ manual_data = [
 # 자동화/수동 상태 정의
 # -------------------------------------------------
 AUTO_MANUAL_SITE_NAMES = {"충북_청주"}
-MANUAL_ONLY_SITE_NAMES = set(name for name, _ in manual_data if name not in AUTO_MANUAL_SITE_NAMES)
+
+# 정말 수동으로만 남길 곳만 최소화
+MANUAL_ONLY_SITE_NAMES = {
+    "보건복지부",
+    "대구_남구",
+    "대구_중구",
+}
 
 MANUAL_EMINWON_CONFIG = {
     "충북_청주": {
@@ -623,6 +629,96 @@ def get_recent_search_window(days=90):
     start_date = today - timedelta(days=days)
     return start_date.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")
 
+def score_and_pick_best_match(matched_items):
+    if not matched_items:
+        return None
+
+    matched_items.sort(
+        key=lambda x: (
+            0 if "교섭요구" in x["title"] else 1,
+            0 if "공고" in x["title"] else 1,
+            0 if x["date"] else 1,
+            -len(x["title"])
+        )
+    )
+    return matched_items[0]
+
+def decide_new_or_old(detected_date: str):
+    if not detected_date:
+        return "🟡 기존 공고"
+    try:
+        normalized = normalize_date_string(detected_date)
+        top_dt = datetime.strptime(normalized, "%Y-%m-%d").date()
+        today = datetime.now(ZoneInfo("Asia/Seoul")).date()
+        days_diff = (today - top_dt).days
+        return "🔴 신규" if 0 <= days_diff <= 7 else "🟡 기존 공고"
+    except Exception:
+        return "🟡 기존 공고"
+
+# -------------------------------------------------
+# 유형 판별
+# -------------------------------------------------
+def is_saeol_like(url: str) -> bool:
+    u = (url or "").lower()
+    keywords = [
+        "selecteminwon",
+        "selecteminwonweblist",
+        "selecteminwonnoticelist",
+        "/saeol/gosi/",
+        "/prog/saeolgosi/",
+        "/prog/eminwon/",
+        "selectsaeolgosi",
+        "selectgosilist",
+        "selectgosinttlist",
+        "selectsaeolgosi",
+        "selectsaeolgosi",
+        "selectsaeolgosi",
+        "selectsaeolgosi",
+        "selectsaeolgosi",
+        "selectsaeolgosilist",
+        "selectsaeolgosi",
+        "selectsaeolgosi",
+        "selectsaeolgosi",
+        "selectgosipblanclist",
+        "selectgosi"
+    ]
+    return any(k in u for k in keywords)
+
+def is_egov_like(url: str) -> bool:
+    u = (url or "").lower()
+    keywords = [
+        "selectbbsnttlist",
+        "selectboardlist",
+        "/bbs/",
+        "bbsid=",
+        "bbsno=",
+        "boardid=",
+        "bd_selectbbslist",
+        "b000",
+    ]
+    return any(k in u for k in keywords)
+
+def is_custom_board_like(url: str) -> bool:
+    u = (url or "").lower()
+    keywords = [
+        "board/list",
+        "boardlist",
+        "list.do",
+        "contents.do",
+        "page.do",
+        "bbsnew/list.do",
+        "index.do?menu_id=",
+        ".web?",
+        ".web",
+        "/html/sub",
+        "/content/boards/",
+        "/cms/",
+        "/notice/",
+        "/nportal/",
+        "/link/"
+    ]
+    return any(k in u for k in keywords)
+
 # -------------------------------------------------
 # 전용 자동검색 함수
 # -------------------------------------------------
@@ -766,16 +862,7 @@ def check_manual_eminwon(name: str, url: str):
             })
 
         if matched_items:
-            matched_items.sort(
-                key=lambda x: (
-                    0 if "교섭요구" in x["title"] else 1,
-                    0 if "공고" in x["title"] else 1,
-                    0 if x["date"] else 1,
-                    -len(x["title"])
-                )
-            )
-
-            top = matched_items[0]
+            top = score_and_pick_best_match(matched_items)
             debug_manual_result(
                 name,
                 response.url,
@@ -785,23 +872,203 @@ def check_manual_eminwon(name: str, url: str):
                 top["date"]
             )
 
-            if top["date"]:
-                normalized = normalize_date_string(top["date"])
-                try:
-                    top_dt = datetime.strptime(normalized, "%Y-%m-%d").date()
-                    today = datetime.now(ZoneInfo("Asia/Seoul")).date()
-                    days_diff = (today - top_dt).days
-                    status = "🔴 신규" if 0 <= days_diff <= 7 else "🟡 기존 공고"
-                except Exception:
-                    status = "🟡 기존 공고"
-            else:
-                status = "🟡 기존 공고"
-
+            status = decide_new_or_old(top["date"])
             return make_result(name, url, status, top["date"], top["title"], top["link"])
 
         fallback_result = analyze_response_text(name, response.url, html)
         if fallback_result["상태"] != "⚪ 결과 없음":
             return fallback_result
+
+        return make_result(name, url, "⚪ 결과 없음")
+
+    except requests.exceptions.Timeout:
+        return make_result(name, url, "⚠️ 타임아웃")
+    except requests.exceptions.HTTPError:
+        return make_result(name, url, "⚠️ 접속 오류")
+    except requests.exceptions.RequestException:
+        return make_result(name, url, "⚠️ 요청 실패")
+    except Exception as e:
+        return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
+
+# -------------------------------------------------
+# 공통 유형별 크롤러 추가
+# -------------------------------------------------
+def check_saeol_common(name: str, url: str):
+    session = create_session()
+    try:
+        response = session.get(url, timeout=(5, 12), allow_redirects=True)
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding or response.encoding
+
+        html = response.text
+        result = analyze_response_text(name, response.url, html)
+
+        if result["상태"] != "⚪ 결과 없음":
+            if not result["감지링크"]:
+                result["감지링크"] = extract_best_post_link(
+                    html,
+                    response.url,
+                    keyword="교섭",
+                    preferred_title=result["감지제목"]
+                )
+            return result
+
+        soup = BeautifulSoup(html, "html.parser")
+        rows = extract_rows_from_soup(soup)
+
+        matched_items = []
+        for row_type, row_obj, row_text in rows:
+            full_text = clean_title(row_obj.get_text(" ", strip=True))
+            if "교섭" not in full_text:
+                continue
+
+            title, link = find_best_anchor_in_container(row_obj, response.url, keyword="교섭")
+            if not is_meaningful_title(title, "교섭"):
+                title = row_text
+
+            date = extract_date_from_text(full_text)
+            if not link:
+                link = extract_best_post_link(html, response.url, keyword="교섭", preferred_title=title)
+
+            matched_items.append({
+                "title": clean_title(title),
+                "date": date,
+                "link": link
+            })
+
+        if matched_items:
+            top = score_and_pick_best_match(matched_items)
+            status = decide_new_or_old(top["date"])
+            return make_result(name, url, status, top["date"], top["title"], top["link"])
+
+        return make_result(name, url, "⚪ 결과 없음")
+
+    except requests.exceptions.Timeout:
+        return make_result(name, url, "⚠️ 타임아웃")
+    except requests.exceptions.HTTPError:
+        return make_result(name, url, "⚠️ 접속 오류")
+    except requests.exceptions.RequestException:
+        return make_result(name, url, "⚠️ 요청 실패")
+    except Exception as e:
+        return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
+
+def check_egov_common(name: str, url: str):
+    session = create_session()
+    try:
+        response = session.get(url, timeout=(5, 12), allow_redirects=True)
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding or response.encoding
+
+        html = response.text
+        result = analyze_response_text(name, response.url, html)
+
+        if result["상태"] != "⚪ 결과 없음":
+            if not result["감지링크"]:
+                result["감지링크"] = extract_best_post_link(
+                    html,
+                    response.url,
+                    keyword="교섭",
+                    preferred_title=result["감지제목"]
+                )
+            return result
+
+        soup = BeautifulSoup(html, "html.parser")
+        rows = soup.select("table tbody tr, table tr")
+        matched_items = []
+
+        for tr in rows:
+            text = clean_title(tr.get_text(" ", strip=True))
+            if "교섭" not in text:
+                continue
+
+            date = extract_date_from_text(text)
+            title, link = find_best_anchor_in_container(tr, response.url, keyword="교섭")
+            if not is_meaningful_title(title, "교섭"):
+                title = text
+            if not link:
+                link = extract_best_post_link(html, response.url, keyword="교섭", preferred_title=title)
+
+            matched_items.append({
+                "title": clean_title(title),
+                "date": date,
+                "link": link
+            })
+
+        if matched_items:
+            top = score_and_pick_best_match(matched_items)
+            status = decide_new_or_old(top["date"])
+            return make_result(name, url, status, top["date"], top["title"], top["link"])
+
+        return make_result(name, url, "⚪ 결과 없음")
+
+    except requests.exceptions.Timeout:
+        return make_result(name, url, "⚠️ 타임아웃")
+    except requests.exceptions.HTTPError:
+        return make_result(name, url, "⚠️ 접속 오류")
+    except requests.exceptions.RequestException:
+        return make_result(name, url, "⚠️ 요청 실패")
+    except Exception as e:
+        return make_result(name, url, "⚠️ 파싱 오류", "", str(e)[:120], "")
+
+def check_custom_common(name: str, url: str):
+    session = create_session()
+    try:
+        response = session.get(url, timeout=(5, 12), allow_redirects=True)
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding or response.encoding
+
+        html = response.text
+        result = analyze_response_text(name, response.url, html)
+
+        if result["상태"] != "⚪ 결과 없음":
+            if not result["감지링크"]:
+                result["감지링크"] = extract_best_post_link(
+                    html,
+                    response.url,
+                    keyword="교섭",
+                    preferred_title=result["감지제목"]
+                )
+            return result
+
+        soup = BeautifulSoup(html, "html.parser")
+
+        containers = []
+        containers.extend(soup.select("table tr"))
+        containers.extend(soup.select("ul li"))
+        containers.extend(soup.select("ol li"))
+        containers.extend(soup.select("div.board_list *"))
+        containers.extend(soup.select("div.list *"))
+        containers.extend(soup.select("div.notice *"))
+
+        matched_items = []
+        seen = set()
+
+        for container in containers:
+            text = clean_title(container.get_text(" ", strip=True))
+            if not text or "교섭" not in text:
+                continue
+            if text in seen:
+                continue
+            seen.add(text)
+
+            title, link = find_best_anchor_in_container(container, response.url, keyword="교섭")
+            if not is_meaningful_title(title, "교섭"):
+                title = text
+
+            date = extract_date_from_text(text)
+            if not link:
+                link = extract_best_post_link(html, response.url, keyword="교섭", preferred_title=title)
+
+            matched_items.append({
+                "title": clean_title(title),
+                "date": date,
+                "link": link
+            })
+
+        if matched_items:
+            top = score_and_pick_best_match(matched_items)
+            status = decide_new_or_old(top["date"])
+            return make_result(name, url, status, top["date"], top["title"], top["link"])
 
         return make_result(name, url, "⚪ 결과 없음")
 
@@ -835,6 +1102,17 @@ def check_site_stable(name: str, url: str):
     if name == "경기도" or ("gg.go.kr/bbs/board.do" in url and "bsIdx=469" in url):
         return check_gyeonggi(name, url)
 
+    # 유형별 공통 자동화 우선
+    if is_saeol_like(url):
+        return check_saeol_common(name, url)
+
+    if is_egov_like(url):
+        return check_egov_common(name, url)
+
+    if is_custom_board_like(url):
+        return check_custom_common(name, url)
+
+    # 최종 fallback
     session = create_session()
     for attempt in range(2):
         try:
@@ -1081,7 +1359,7 @@ def get_sites_for_region(region_name):
     return regional_head + locals_list
 
 def is_auto_site(site_name):
-    return site_name in target_data_flat_names or site_name in AUTO_MANUAL_SITE_NAMES
+    return site_name in target_data_flat_names or site_name in manual_lookup or site_name in AUTO_MANUAL_SITE_NAMES
 
 def is_manual_only_site(site_name):
     return site_name in MANUAL_ONLY_SITE_NAMES
@@ -1096,7 +1374,7 @@ def format_site_label(site_name):
 def on_all_sites_clicked():
     checked = st.session_state.get("all_sites", False)
     for region in sort_order:
-        auto_sites = [name for name, _ in get_sites_for_region(region) if is_auto_site(name)]
+        auto_sites = [name for name, _ in get_sites_for_region(region) if is_auto_site(name) and not is_manual_only_site(name)]
         manual_sites = [name for name, _ in get_sites_for_region(region) if is_manual_only_site(name)]
 
         st.session_state[f"region_all_{region}"] = checked
@@ -1104,7 +1382,6 @@ def on_all_sites_clicked():
         for site_name in auto_sites:
             st.session_state[f"site_{site_name}"] = checked
 
-        # 전체 선택은 수동검색까지 기본적으로 같이 선택하지 않음
         if checked:
             for site_name in manual_sites:
                 st.session_state[f"site_{site_name}"] = False
@@ -1115,12 +1392,15 @@ def on_all_sites_clicked():
 def on_region_group_all_clicked(region_name):
     checked = st.session_state.get(f"region_all_{region_name}", False)
     for site_name, _ in get_sites_for_region(region_name):
-        if is_auto_site(site_name):
+        if is_auto_site(site_name) and not is_manual_only_site(site_name):
             st.session_state[f"site_{site_name}"] = checked
 
 def sync_region_all_state(region_name):
     sites = get_sites_for_region(region_name)
-    auto_site_names = [site_name for site_name, _ in sites if is_auto_site(site_name)]
+    auto_site_names = [
+        site_name for site_name, _ in sites
+        if is_auto_site(site_name) and not is_manual_only_site(site_name)
+    ]
 
     if not auto_site_names:
         st.session_state[f"region_all_{region_name}"] = False
@@ -1135,7 +1415,10 @@ def sync_region_all_state(region_name):
 def sync_global_all_state():
     all_auto_sites = []
     for region in sort_order:
-        all_auto_sites.extend([site_name for site_name, _ in get_sites_for_region(region) if is_auto_site(site_name)])
+        all_auto_sites.extend([
+            site_name for site_name, _ in get_sites_for_region(region)
+            if is_auto_site(site_name) and not is_manual_only_site(site_name)
+        ])
 
     if not all_auto_sites:
         st.session_state["all_sites"] = False
@@ -1216,8 +1499,7 @@ for region in sort_order:
     for site_name, _ in get_sites_for_region(region):
         key = f"site_{site_name}"
         if key not in st.session_state:
-            # 자동검색은 기본 체크, 수동검색은 기본 해제
-            st.session_state[key] = is_auto_site(site_name)
+            st.session_state[key] = is_auto_site(site_name) and not is_manual_only_site(site_name)
 
 selected_sites = []
 
@@ -1234,7 +1516,10 @@ if st.session_state["region_selector_open"]:
 
     total_target_count = 0
     for region in sort_order:
-        total_target_count += len([name for name, _ in get_sites_for_region(region) if is_auto_site(name)])
+        total_target_count += len([
+            name for name, _ in get_sites_for_region(region)
+            if is_auto_site(name) and not is_manual_only_site(name)
+        ])
 
     sync_global_all_state()
 
@@ -1254,7 +1539,10 @@ if st.session_state["region_selector_open"]:
         sync_region_all_state(region)
 
         with region_cols[idx % 2]:
-            auto_count = len([name for name, _ in region_sites if is_auto_site(name)])
+            auto_count = len([
+                name for name, _ in region_sites
+                if is_auto_site(name) and not is_manual_only_site(name)
+            ])
 
             region_checked = st.checkbox(
                 f"{region} ({auto_count})",
@@ -1263,19 +1551,16 @@ if st.session_state["region_selector_open"]:
                 args=(region,)
             )
 
-            # 화면 표시 일치용:
-            # 광역 체크가 켜져 있으면 자동검색 항목은 체크, 수동검색 항목은 해제 상태로 맞춤
             if region_checked:
                 for site_name, _ in region_sites:
-                    if is_auto_site(site_name):
+                    if is_auto_site(site_name) and not is_manual_only_site(site_name):
                         st.session_state[f"site_{site_name}"] = True
                     elif is_manual_only_site(site_name):
                         if f"site_{site_name}" not in st.session_state:
                             st.session_state[f"site_{site_name}"] = False
             else:
-                # 광역 체크가 꺼져 있으면 자동검색 항목만 같이 해제
                 for site_name, _ in region_sites:
-                    if is_auto_site(site_name):
+                    if is_auto_site(site_name) and not is_manual_only_site(site_name):
                         st.session_state[f"site_{site_name}"] = False
 
             with st.expander(f"{region} 세부 선택", expanded=False):
@@ -1373,4 +1658,3 @@ if st.session_state["last_results"]:
             )
             st.session_state["last_results"] = merged_results
             st.rerun()
-
